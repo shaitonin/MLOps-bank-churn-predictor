@@ -1,0 +1,27 @@
+{
+  "feature_columns": [
+    "CreditScore",
+    "Age",
+    "Tenure",
+    "Balance",
+    "NumOfProducts",
+    "HasCrCard",
+    "IsActiveMember",
+    "EstimatedSalary",
+    "Satisfaction Score",
+    "Point Earned",
+    "HasZeroBalance",
+    "HighRiskProducts",
+    "AgeInactivity",
+    "EngagementScore",
+    "BalanceSalaryRatio",
+    "AgeGroup",
+    "geo_France",
+    "geo_Germany",
+    "geo_Spain",
+    "Gender_encoded"
+  ],
+  "target_column": "Exited",
+  "threshold": 0.4,
+  "n_features": 20
+}

@@ -1,0 +1,32 @@
+# Secrets e credenciais
+secrets.env
+*.env
+.env
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# MLflow
+mlflow.db
+mlruns/
+
+# Modelos serializados
+outputs/models/*.joblib
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/

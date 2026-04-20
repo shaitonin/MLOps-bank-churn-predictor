@@ -1,0 +1,216 @@
+# quality.yaml — Configuração de qualidade de dados via Great Expectations
+#
+# Este arquivo define TODAS as regras de qualidade. O código (src/quality_checks.py)
+# é genérico: lê este YAML e executa as verificações dinamicamente.
+#
+# Tipos de expectation usam snake_case (padrão GE).
+# kwargs seguem a assinatura exata de cada classe GE.
+#
+# Todos os parâmetros numéricos foram derivados do dataset real (EDA Seção 9)
+# usando percentis robustos (p01–p99) + tolerâncias estatísticas (±2σ).
+
+quality:
+  suite_name: "bank_churn_suite"
+  # fail_pipeline_on_error: true → lança RuntimeError se qualquer check falhar
+  # Use true em produção, false durante exploração / desenvolvimento
+  fail_pipeline_on_error: false
+  output_dir: "outputs/quality"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Expectations de TABELA
+# Validam propriedades globais do dataset
+# ─────────────────────────────────────────────────────────────────────────────
+table_expectations:
+
+  # Dataset observado: 10.000 linhas
+  # Tolerância ±20%: mínimo 8.000, máximo 12.000
+  - type: expect_table_row_count_to_be_between
+    kwargs:
+      min_value: 8000
+      max_value: 12000
+
+  # Garante que o schema não mudou — nenhuma coluna foi adicionada ou removida
+  - type: expect_table_columns_to_match_set
+    kwargs:
+      column_set:
+        - "RowNumber"
+        - "CustomerId"
+        - "Surname"
+        - "CreditScore"
+        - "Geography"
+        - "Gender"
+        - "Age"
+        - "Tenure"
+        - "Balance"
+        - "NumOfProducts"
+        - "HasCrCard"
+        - "IsActiveMember"
+        - "EstimatedSalary"
+        - "Exited"
+        - "Complain"
+        - "Satisfaction Score"
+        - "Card Type"
+        - "Point Earned"
+      exact_match: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Expectations de COLUNA
+# ─────────────────────────────────────────────────────────────────────────────
+column_expectations:
+
+  # ── Variável alvo ──────────────────────────────────────────────────────────
+  # Distribuição observada: 79.62% retidos (0), 20.38% churned (1)
+  Exited:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: [0, 1]
+
+  # ── Features numéricas contínuas ───────────────────────────────────────────
+
+  # Dados observados: min=350, max=850, média=650.5, std=96.7, skew=-0.07
+  CreditScore:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 432      # p01 observado
+        max_value: 850      # p99 observado (máximo histórico de score)
+        mostly: 0.99
+    - type: expect_column_mean_to_be_between
+      kwargs:
+        min_value: 457.2    # média - 2σ = 650.5 - 2×96.7
+        max_value: 843.8    # média + 2σ = 650.5 + 2×96.7
+    - type: expect_column_stdev_to_be_between
+      kwargs:
+        min_value: 48.3     # std × 0.5
+        max_value: 145.0    # std × 1.5
+
+  # Dados observados: min=18, max=92, média=38.9, std=10.5, skew=+1.01 (assimétrico)
+  Age:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 21       # p01 observado (mínimo legal realista = 18)
+        max_value: 72       # p99 observado (cauda longa até 92, mas rara)
+        mostly: 0.99
+    - type: expect_column_mean_to_be_between
+      kwargs:
+        min_value: 17.9     # média - 2σ = 38.9 - 2×10.5
+        max_value: 59.9     # média + 2σ = 38.9 + 2×10.5
+    - type: expect_column_stdev_to_be_between
+      kwargs:
+        min_value: 5.2      # std × 0.5 = 10.5 × 0.5
+        max_value: 15.7     # std × 1.5 = 10.5 × 1.5
+
+  # Dados observados: min=0, max=250.898, mediana=97.199
+  # ATENÇÃO: 36.17% dos clientes têm saldo = 0 — comportamento legítimo, não erro
+  Balance:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 0        # zero é valor legítimo e frequente
+        max_value: 250898   # máximo histórico observado
+    - type: expect_column_mean_to_be_between
+      kwargs:
+        min_value: 0        # média pode ser baixa (distribuição bimodal)
+        max_value: 201281   # média + 2σ = 76.486 + 2×62.397
+
+  # Dados observados: min=11.58, max=199.992, uniforme
+  EstimatedSalary:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 0        # não pode ser negativo
+        max_value: 200000   # limite observado (~200k)
+        mostly: 0.99
+    - type: expect_column_mean_to_be_between
+      kwargs:
+        min_value: 0        # distribuição uniforme — média pode variar
+        max_value: 215111   # média + 2σ = 100.090 + 2×57.510
+
+  # Dados observados: min=119, max=1.000, uniforme
+  Point Earned:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 119      # mínimo histórico do programa de pontos
+        max_value: 1000     # máximo do programa de pontos
+    - type: expect_column_mean_to_be_between
+      kwargs:
+        min_value: 154.7    # média - 2σ = 606.5 - 2×225.9
+        max_value: 1058.4   # média + 2σ (truncar em 1000 na prática)
+
+  # ── Features numéricas discretas ───────────────────────────────────────────
+
+  # Dados observados: min=0, max=10, média=5.01, uniforme
+  Tenure:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 0        # cliente novo
+        max_value: 10       # máximo histórico = 10 anos
+
+  # Dados observados: min=1, max=4, mediana=1
+  # ATENÇÃO: relação não-linear com churn — 3-4 produtos = altíssimo churn
+  NumOfProducts:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 1        # mínimo: pelo menos 1 produto contratado
+        max_value: 4        # máximo histórico observado
+
+  # Escala fixa de satisfação: 1 (péssimo) a 5 (ótimo)
+  Satisfaction Score:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_between
+      kwargs:
+        min_value: 1
+        max_value: 5
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: [1, 2, 3, 4, 5]
+
+  # ── Variáveis binárias ─────────────────────────────────────────────────────
+  HasCrCard:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: [0, 1]
+
+  IsActiveMember:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: [0, 1]
+
+  # Correlação de Pearson com Exited = 0.9957 — investigar data leakage (EDA Seção 7)
+  Complain:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: [0, 1]
+
+  # ── Variáveis categóricas ──────────────────────────────────────────────────
+
+  # Distribuição observada: France=50.1%, Germany=25.1%, Spain=24.8%
+  # Germany tem churn 2× maior — desvio desta distribuição merece atenção
+  Geography:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: ["France", "Germany", "Spain"]
+
+  # Distribuição observada: Male=54.57%, Female=45.43%
+  Gender:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: ["Male", "Female"]
+
+  # Distribuição perfeitamente balanceada (~25% cada categoria)
+  # Qualquer desvio grande indicaria problema de coleta ou encoding
+  Card Type:
+    - type: expect_column_values_to_not_be_null
+    - type: expect_column_values_to_be_in_set
+      kwargs:
+        value_set: ["DIAMOND", "GOLD", "SILVER", "PLATINUM"]

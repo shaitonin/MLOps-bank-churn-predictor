@@ -1,0 +1,38 @@
+# data.yaml — Dataset-specific configuration
+# Controls Kaggle source, file discovery, ingestion behavior, and schema
+
+kaggle:
+  dataset: "radheshyamkollipara/bank-customer-churn"
+  file_pattern: "*.csv"
+  expected_files: []
+  expected_count: null
+
+ingest:
+  output_format: "parquet"
+  compression: "snappy"
+  chunk_size_rows: 5000
+  convert_dtypes: true
+  validate_schema: true      
+
+schema:
+  # Required columns — pipeline fails loudly if any are missing post-ingest
+  # Column names from the radheshyamkollipara/bank-customer-churn dataset
+  required_columns:
+    - 'RowNumber'
+    - 'CustomerId'
+    - 'Surname'
+    - 'CreditScore'
+    - 'Geography'
+    - 'Gender'
+    - 'Age'
+    - 'Tenure'
+    - 'Balance'
+    - 'NumOfProducts'
+    - 'HasCrCard'
+    - 'IsActiveMember'
+    - 'EstimatedSalary'
+    - 'Exited'
+    - 'Complain'
+    - 'Satisfaction Score'
+    - 'Card Type'
+    - 'Point Earned'

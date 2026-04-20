@@ -1,0 +1,2552 @@
+{
+  "metadata": {
+    "generated_at": "2026-04-18T10:13:39.609756Z",
+    "dataset_path": "/Users/Shaiane/Projeto_MLOps_Bank_Churn/data/raw/Customer-Churn-Records.csv",
+    "analysis_version": "2.0.0",
+    "context": "Classification (Bank Churn)"
+  },
+  "overview": {
+    "n_rows": 10000,
+    "n_cols": 18,
+    "memory_mb": 1.676,
+    "columns": [
+      "RowNumber",
+      "CustomerId",
+      "Surname",
+      "CreditScore",
+      "Geography",
+      "Gender",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "HasCrCard",
+      "IsActiveMember",
+      "EstimatedSalary",
+      "Exited",
+      "Complain",
+      "Satisfaction Score",
+      "Card Type",
+      "Point Earned"
+    ],
+    "dtypes": {
+      "RowNumber": "int64",
+      "CustomerId": "int64",
+      "Surname": "str",
+      "CreditScore": "int64",
+      "Geography": "str",
+      "Gender": "str",
+      "Age": "int64",
+      "Tenure": "int64",
+      "Balance": "float64",
+      "NumOfProducts": "int64",
+      "HasCrCard": "int64",
+      "IsActiveMember": "int64",
+      "EstimatedSalary": "float64",
+      "Exited": "int64",
+      "Complain": "int64",
+      "Satisfaction Score": "int64",
+      "Card Type": "str",
+      "Point Earned": "int64"
+    },
+    "id_columns": [
+      "RowNumber",
+      "CustomerId",
+      "Surname"
+    ],
+    "numeric_columns": [
+      "CreditScore",
+      "Age",
+      "Tenure",
+      "Balance",
+      "NumOfProducts",
+      "EstimatedSalary",
+      "Satisfaction Score",
+      "Point Earned"
+    ],
+    "binary_columns": [
+      "HasCrCard",
+      "IsActiveMember",
+      "Exited",
+      "Complain"
+    ],
+    "categorical_columns": [
+      "Geography",
+      "Gender",
+      "Card Type"
+    ]
+  },
+  "missing_values": {
+    "total_missing_cells": 0,
+    "total_cells": 180000,
+    "overall_missing_pct": 0.0,
+    "columns_with_missing": [],
+    "per_column": {
+      "RowNumber": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "CustomerId": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Surname": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "CreditScore": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Geography": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Gender": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Age": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Tenure": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Balance": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "NumOfProducts": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "HasCrCard": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "IsActiveMember": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "EstimatedSalary": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Exited": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Complain": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Satisfaction Score": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Card Type": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      },
+      "Point Earned": {
+        "missing_count": 0,
+        "missing_pct": 0.0,
+        "has_missing": false
+      }
+    }
+  },
+  "duplicates": {
+    "exact_duplicates": 0,
+    "feature_duplicates_excl_ids": 0,
+    "unique_customer_ids": 10000
+  },
+  "numeric_statistics": {
+    "CreditScore": {
+      "count": 10000,
+      "mean": 650.5288,
+      "std": 96.65329873613035,
+      "min": 350,
+      "max": 850,
+      "median": 652.0,
+      "skewness": -0.07160660820092675,
+      "kurtosis": -0.42572568480291295,
+      "percentiles": {
+        "p01": 432.0,
+        "p05": 489.0,
+        "p10": 521.0,
+        "p25": 584.0,
+        "p50": 652.0,
+        "p75": 718.0,
+        "p90": 778.0,
+        "p95": 812.0,
+        "p99": 850.0
+      },
+      "iqr": 134.0,
+      "outliers_iqr_count": 15,
+      "outliers_iqr_pct": 0.15,
+      "outliers_zscore_count": 8,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 132.82837928588427,
+          "p_value": 1.434445056038405e-29,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.0195192630357387,
+          "p_value": 0.0009679059703486807,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "Age": {
+      "count": 10000,
+      "mean": 38.9218,
+      "std": 10.487806451704609,
+      "min": 18,
+      "max": 92,
+      "median": 37.0,
+      "skewness": 1.0113202630234552,
+      "kurtosis": 1.3953470615086947,
+      "percentiles": {
+        "p01": 21.0,
+        "p05": 25.0,
+        "p10": 27.0,
+        "p25": 32.0,
+        "p50": 37.0,
+        "p75": 44.0,
+        "p90": 53.0,
+        "p95": 60.0,
+        "p99": 72.0
+      },
+      "iqr": 12.0,
+      "outliers_iqr_count": 359,
+      "outliers_iqr_pct": 3.59,
+      "outliers_zscore_count": 133,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 1507.7908881363314,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.10095882841144077,
+          "p_value": 3.463527589032954e-89,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "Tenure": {
+      "count": 10000,
+      "mean": 5.0128,
+      "std": 2.8921743770496837,
+      "min": 0,
+      "max": 10,
+      "median": 5.0,
+      "skewness": 0.010991457977179039,
+      "kurtosis": -1.1652252274891766,
+      "percentiles": {
+        "p01": 0.0,
+        "p05": 1.0,
+        "p10": 1.0,
+        "p25": 3.0,
+        "p50": 5.0,
+        "p75": 7.0,
+        "p90": 9.0,
+        "p95": 9.0,
+        "p99": 10.0
+      },
+      "iqr": 4.0,
+      "outliers_iqr_count": 0,
+      "outliers_iqr_pct": 0.0,
+      "outliers_zscore_count": 0,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 6481.918283079272,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.10726898030080312,
+          "p_value": 1.1738056747234292e-100,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "Balance": {
+      "count": 10000,
+      "mean": 76485.889288,
+      "std": 62397.40520238596,
+      "min": 0.0,
+      "max": 250898.09,
+      "median": 97198.54000000001,
+      "skewness": -0.14110871094154379,
+      "kurtosis": -1.4894117679419254,
+      "percentiles": {
+        "p01": 0.0,
+        "p05": 0.0,
+        "p10": 0.0,
+        "p25": 0.0,
+        "p50": 97198.54000000001,
+        "p75": 127644.24,
+        "p90": 149244.79200000002,
+        "p95": 162711.66899999988,
+        "p99": 185967.98540000003
+      },
+      "iqr": 127644.24,
+      "outliers_iqr_count": 0,
+      "outliers_iqr_pct": 0.0,
+      "outliers_zscore_count": 0,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 62973.389518519696,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.2515604625693165,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "NumOfProducts": {
+      "count": 10000,
+      "mean": 1.5302,
+      "std": 0.5816543579989906,
+      "min": 1,
+      "max": 4,
+      "median": 1.0,
+      "skewness": 0.7455678882823168,
+      "kurtosis": 0.5829807629457178,
+      "percentiles": {
+        "p01": 1.0,
+        "p05": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 2.0,
+        "p90": 2.0,
+        "p95": 2.0,
+        "p99": 3.0
+      },
+      "iqr": 1.0,
+      "outliers_iqr_count": 60,
+      "outliers_iqr_pct": 0.6,
+      "outliers_zscore_count": 60,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 832.9888632346675,
+          "p_value": 1.3145182051633007e-181,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.32739399077063586,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "EstimatedSalary": {
+      "count": 10000,
+      "mean": 100090.239881,
+      "std": 57510.49281769816,
+      "min": 11.58,
+      "max": 199992.48,
+      "median": 100193.915,
+      "skewness": 0.002085357661558513,
+      "kurtosis": -1.1815184473915485,
+      "percentiles": {
+        "p01": 1842.8253000000004,
+        "p05": 9851.818500000001,
+        "p10": 20273.58,
+        "p25": 51002.11,
+        "p50": 100193.915,
+        "p75": 149388.2475,
+        "p90": 179674.704,
+        "p95": 190155.3755,
+        "p99": 198069.7345
+      },
+      "iqr": 98386.1375,
+      "outliers_iqr_count": 0,
+      "outliers_iqr_pct": 0.0,
+      "outliers_zscore_count": 0,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 7397.149829198932,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.055095303482978975,
+          "p_value": 7.977800485638632e-27,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "Satisfaction Score": {
+      "count": 10000,
+      "mean": 3.0138,
+      "std": 1.4059186394390224,
+      "min": 1,
+      "max": 5,
+      "median": 3.0,
+      "skewness": -0.008936268342817345,
+      "kurtosis": -1.2850967811849936,
+      "percentiles": {
+        "p01": 1.0,
+        "p05": 1.0,
+        "p10": 1.0,
+        "p25": 2.0,
+        "p50": 3.0,
+        "p75": 4.0,
+        "p90": 5.0,
+        "p95": 5.0,
+        "p99": 5.0
+      },
+      "iqr": 2.0,
+      "outliers_iqr_count": 0,
+      "outliers_iqr_pct": 0.0,
+      "outliers_zscore_count": 0,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 25747.86621676279,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.15969296200790106,
+          "p_value": 3.0238038115215956e-223,
+          "is_normal_a05": false
+        }
+      }
+    },
+    "Point Earned": {
+      "count": 10000,
+      "mean": 606.5151,
+      "std": 225.9248392171333,
+      "min": 119,
+      "max": 1000,
+      "median": 605.0,
+      "skewness": 0.0083441129822757,
+      "kurtosis": -1.1937810441907524,
+      "percentiles": {
+        "p01": 226.0,
+        "p05": 255.0,
+        "p10": 295.0,
+        "p25": 410.0,
+        "p50": 605.0,
+        "p75": 801.0,
+        "p90": 921.0,
+        "p95": 960.0,
+        "p99": 992.0
+      },
+      "iqr": 391.0,
+      "outliers_iqr_count": 0,
+      "outliers_iqr_pct": 0.0,
+      "outliers_zscore_count": 0,
+      "normality_tests": {
+        "dagostino_pearson": {
+          "statistic": 8222.77647257955,
+          "p_value": 0.0,
+          "is_normal_a05": false
+        },
+        "kolmogorov_smirnov": {
+          "statistic": 0.05982745925677785,
+          "p_value": 1.4790528739833762e-31,
+          "is_normal_a05": false
+        }
+      }
+    }
+  },
+  "categorical_statistics": {
+    "Geography": {
+      "dtype": "str",
+      "unique_count": 3,
+      "unique_values": [
+        "France",
+        "Germany",
+        "Spain"
+      ],
+      "value_counts": {
+        "France": 5014,
+        "Germany": 2509,
+        "Spain": 2477
+      },
+      "value_frequencies_pct": {
+        "France": 50.14,
+        "Germany": 25.09,
+        "Spain": 24.77
+      },
+      "entropy_bits": 1.4985795298480267
+    },
+    "Gender": {
+      "dtype": "str",
+      "unique_count": 2,
+      "unique_values": [
+        "Female",
+        "Male"
+      ],
+      "value_counts": {
+        "Male": 5457,
+        "Female": 4543
+      },
+      "value_frequencies_pct": {
+        "Male": 54.57,
+        "Female": 45.43
+      },
+      "entropy_bits": 0.9939654731937201
+    },
+    "Card Type": {
+      "dtype": "str",
+      "unique_count": 4,
+      "unique_values": [
+        "DIAMOND",
+        "GOLD",
+        "PLATINUM",
+        "SILVER"
+      ],
+      "value_counts": {
+        "DIAMOND": 2507,
+        "GOLD": 2502,
+        "SILVER": 2496,
+        "PLATINUM": 2495
+      },
+      "value_frequencies_pct": {
+        "DIAMOND": 25.07,
+        "GOLD": 25.02,
+        "SILVER": 24.96,
+        "PLATINUM": 24.95
+      },
+      "entropy_bits": 1.9999972883540322
+    },
+    "HasCrCard": {
+      "dtype": "int64",
+      "unique_count": 2,
+      "unique_values": [
+        "0",
+        "1"
+      ],
+      "value_counts": {
+        "1": 7055,
+        "0": 2945
+      },
+      "value_frequencies_pct": {
+        "1": 70.55,
+        "0": 29.45
+      },
+      "entropy_bits": 0.8744634652266465
+    },
+    "IsActiveMember": {
+      "dtype": "int64",
+      "unique_count": 2,
+      "unique_values": [
+        "0",
+        "1"
+      ],
+      "value_counts": {
+        "1": 5151,
+        "0": 4849
+      },
+      "value_frequencies_pct": {
+        "1": 51.51,
+        "0": 48.49
+      },
+      "entropy_bits": 0.9993420021661021
+    },
+    "Exited": {
+      "dtype": "int64",
+      "unique_count": 2,
+      "unique_values": [
+        "0",
+        "1"
+      ],
+      "value_counts": {
+        "0": 7962,
+        "1": 2038
+      },
+      "value_frequencies_pct": {
+        "0": 79.62,
+        "1": 20.38
+      },
+      "entropy_bits": 0.7294632993589241
+    },
+    "Complain": {
+      "dtype": "int64",
+      "unique_count": 2,
+      "unique_values": [
+        "0",
+        "1"
+      ],
+      "value_counts": {
+        "0": 7956,
+        "1": 2044
+      },
+      "value_frequencies_pct": {
+        "0": 79.56,
+        "1": 20.44
+      },
+      "entropy_bits": 0.730641286246473
+    }
+  },
+  "target_analysis": {
+    "target_column": "Exited",
+    "n_total": 10000,
+    "n_churned": 2038,
+    "n_retained": 7962,
+    "churn_rate_pct": 20.38,
+    "retention_rate_pct": 79.62,
+    "class_imbalance_ratio": 3.9068,
+    "churn_by_geography": {
+      "France": {
+        "churn_count": 811,
+        "total_count": 5014,
+        "churn_rate_pct": 16.175
+      },
+      "Germany": {
+        "churn_count": 814,
+        "total_count": 2509,
+        "churn_rate_pct": 32.443
+      },
+      "Spain": {
+        "churn_count": 413,
+        "total_count": 2477,
+        "churn_rate_pct": 16.673
+      }
+    },
+    "churn_by_gender": {
+      "Female": {
+        "churn_count": 1139,
+        "total_count": 4543,
+        "churn_rate_pct": 25.072
+      },
+      "Male": {
+        "churn_count": 899,
+        "total_count": 5457,
+        "churn_rate_pct": 16.474
+      }
+    },
+    "churn_by_num_products": {
+      "1.0": {
+        "churn_count": 1409,
+        "total_count": 5084,
+        "churn_rate_pct": 27.714
+      },
+      "2.0": {
+        "churn_count": 349,
+        "total_count": 4590,
+        "churn_rate_pct": 7.603
+      },
+      "3.0": {
+        "churn_count": 220,
+        "total_count": 266,
+        "churn_rate_pct": 82.707
+      },
+      "4.0": {
+        "churn_count": 60,
+        "total_count": 60,
+        "churn_rate_pct": 100.0
+      }
+    },
+    "churn_by_card_type": {
+      "DIAMOND": {
+        "churn_count": 546,
+        "total_count": 2507,
+        "churn_rate_pct": 21.779
+      },
+      "GOLD": {
+        "churn_count": 482,
+        "total_count": 2502,
+        "churn_rate_pct": 19.265
+      },
+      "PLATINUM": {
+        "churn_count": 508,
+        "total_count": 2495,
+        "churn_rate_pct": 20.361
+      },
+      "SILVER": {
+        "churn_count": 502,
+        "total_count": 2496,
+        "churn_rate_pct": 20.112
+      }
+    },
+    "churn_by_tenure": {
+      "0.0": {
+        "churn_count": 95,
+        "total_count": 413,
+        "churn_rate_pct": 23.002
+      },
+      "1.0": {
+        "churn_count": 232,
+        "total_count": 1035,
+        "churn_rate_pct": 22.415
+      },
+      "2.0": {
+        "churn_count": 201,
+        "total_count": 1048,
+        "churn_rate_pct": 19.179
+      },
+      "3.0": {
+        "churn_count": 213,
+        "total_count": 1009,
+        "churn_rate_pct": 21.11
+      },
+      "4.0": {
+        "churn_count": 203,
+        "total_count": 989,
+        "churn_rate_pct": 20.526
+      },
+      "5.0": {
+        "churn_count": 209,
+        "total_count": 1012,
+        "churn_rate_pct": 20.652
+      },
+      "6.0": {
+        "churn_count": 196,
+        "total_count": 967,
+        "churn_rate_pct": 20.269
+      },
+      "7.0": {
+        "churn_count": 177,
+        "total_count": 1028,
+        "churn_rate_pct": 17.218
+      },
+      "8.0": {
+        "churn_count": 197,
+        "total_count": 1025,
+        "churn_rate_pct": 19.22
+      },
+      "9.0": {
+        "churn_count": 214,
+        "total_count": 984,
+        "churn_rate_pct": 21.748
+      },
+      "10.0": {
+        "churn_count": 101,
+        "total_count": 490,
+        "churn_rate_pct": 20.612
+      }
+    },
+    "churn_by_satisfaction": {
+      "1.0": {
+        "churn_count": 387,
+        "total_count": 1932,
+        "churn_rate_pct": 20.031
+      },
+      "2.0": {
+        "churn_count": 439,
+        "total_count": 2014,
+        "churn_rate_pct": 21.797
+      },
+      "3.0": {
+        "churn_count": 401,
+        "total_count": 2042,
+        "churn_rate_pct": 19.638
+      },
+      "4.0": {
+        "churn_count": 414,
+        "total_count": 2008,
+        "churn_rate_pct": 20.618
+      },
+      "5.0": {
+        "churn_count": 397,
+        "total_count": 2004,
+        "churn_rate_pct": 19.81
+      }
+    }
+  },
+  "correlations": {
+    "pearson_matrix": {
+      "CreditScore": {
+        "CreditScore": 1.0,
+        "Age": -0.003964905525390093,
+        "Tenure": 0.0008419418186461118,
+        "Balance": 0.006268381616008895,
+        "NumOfProducts": 0.012237879283268022,
+        "EstimatedSalary": -0.0013842928679844116,
+        "Satisfaction Score": -0.012599238712946348,
+        "Point Earned": 7.666025428070795e-05,
+        "HasCrCard": -0.005458482094623337,
+        "IsActiveMember": 0.02565132328314853,
+        "Exited": -0.026771448055271572,
+        "Complain": -0.027047974161615824
+      },
+      "Age": {
+        "CreditScore": -0.003964905525390093,
+        "Age": 1.0,
+        "Tenure": -0.009996825590774175,
+        "Balance": 0.028308368327491767,
+        "NumOfProducts": -0.03068008796150861,
+        "EstimatedSalary": -0.007201042376657377,
+        "Satisfaction Score": -0.0008763736829135578,
+        "Point Earned": 0.0022224119971398838,
+        "HasCrCard": -0.011721029001738785,
+        "IsActiveMember": 0.08547214540357688,
+        "Exited": 0.2852964638406702,
+        "Complain": 0.28352989418552416
+      },
+      "Tenure": {
+        "CreditScore": 0.0008419418186461118,
+        "Age": -0.009996825590774175,
+        "Tenure": 1.0,
+        "Balance": -0.012253926175215443,
+        "NumOfProducts": 0.013443755460747353,
+        "EstimatedSalary": 0.007783825455810556,
+        "Satisfaction Score": 0.008663423605867195,
+        "Point Earned": -0.010195923531823943,
+        "HasCrCard": 0.022582867284984275,
+        "IsActiveMember": -0.028362077771628413,
+        "Exited": -0.013655799112819566,
+        "Complain": -0.013047251728499453
+      },
+      "Balance": {
+        "CreditScore": 0.006268381616008895,
+        "Age": 0.028308368327491767,
+        "Tenure": -0.012253926175215443,
+        "Balance": 1.0,
+        "NumOfProducts": -0.30417973836054985,
+        "EstimatedSalary": 0.012797496340555754,
+        "Satisfaction Score": -0.002588072968947942,
+        "Point Earned": 0.014607932693841535,
+        "HasCrCard": -0.01485834494459869,
+        "IsActiveMember": -0.010084100438351656,
+        "Exited": 0.11857690046280467,
+        "Complain": 0.11912425940485928
+      },
+      "NumOfProducts": {
+        "CreditScore": 0.012237879283268022,
+        "Age": -0.03068008796150861,
+        "Tenure": 0.013443755460747353,
+        "Balance": -0.30417973836054985,
+        "NumOfProducts": 1.0,
+        "EstimatedSalary": 0.014204195129094595,
+        "Satisfaction Score": -0.011394182327757985,
+        "Point Earned": -0.015329920903163416,
+        "HasCrCard": 0.0031831459930522147,
+        "IsActiveMember": 0.009611875911327925,
+        "Exited": -0.04761061414947439,
+        "Complain": -0.04635680451854067
+      },
+      "EstimatedSalary": {
+        "CreditScore": -0.0013842928679844116,
+        "Age": -0.007201042376657377,
+        "Tenure": 0.007783825455810556,
+        "Balance": 0.012797496340555754,
+        "NumOfProducts": 0.014204195129094595,
+        "EstimatedSalary": 1.0,
+        "Satisfaction Score": -0.013746627717523672,
+        "Point Earned": -0.0015146106892506236,
+        "HasCrCard": -0.00993341465254775,
+        "IsActiveMember": -0.011421430484956566,
+        "Exited": 0.012489719907641044,
+        "Complain": 0.012493945330409376
+      },
+      "Satisfaction Score": {
+        "CreditScore": -0.012599238712946348,
+        "Age": -0.0008763736829135578,
+        "Tenure": 0.008663423605867195,
+        "Balance": -0.002588072968947942,
+        "NumOfProducts": -0.011394182327757985,
+        "EstimatedSalary": -0.013746627717523672,
+        "Satisfaction Score": 1.0,
+        "Point Earned": -0.014399892308068863,
+        "HasCrCard": -0.00021207517066217544,
+        "IsActiveMember": 0.01023567273066821,
+        "Exited": -0.005849198648614126,
+        "Complain": -0.004799075066955645
+      },
+      "Point Earned": {
+        "CreditScore": 7.666025428070795e-05,
+        "Age": 0.0022224119971398838,
+        "Tenure": -0.010195923531823943,
+        "Balance": 0.014607932693841535,
+        "NumOfProducts": -0.015329920903163416,
+        "EstimatedSalary": -0.0015146106892506236,
+        "Satisfaction Score": -0.014399892308068863,
+        "Point Earned": 1.0,
+        "HasCrCard": -0.011040532153889053,
+        "IsActiveMember": -0.00498318736053346,
+        "Exited": -0.004628173124983771,
+        "Complain": -0.0028932966589094757
+      },
+      "HasCrCard": {
+        "CreditScore": -0.005458482094623337,
+        "Age": -0.011721029001738785,
+        "Tenure": 0.022582867284984275,
+        "Balance": -0.01485834494459869,
+        "NumOfProducts": 0.0031831459930522147,
+        "EstimatedSalary": -0.00993341465254775,
+        "Satisfaction Score": -0.00021207517066217544,
+        "Point Earned": -0.011040532153889053,
+        "HasCrCard": 1.0,
+        "IsActiveMember": -0.0118656368784579,
+        "Exited": -0.006976070976576932,
+        "Complain": -0.007095209188390618
+      },
+      "IsActiveMember": {
+        "CreditScore": 0.02565132328314853,
+        "Age": 0.08547214540357688,
+        "Tenure": -0.028362077771628413,
+        "Balance": -0.010084100438351656,
+        "NumOfProducts": 0.009611875911327925,
+        "EstimatedSalary": -0.011421430484956566,
+        "Satisfaction Score": 0.01023567273066821,
+        "Point Earned": -0.00498318736053346,
+        "HasCrCard": -0.0118656368784579,
+        "IsActiveMember": 1.0,
+        "Exited": -0.15635563349849313,
+        "Complain": -0.15474125042882408
+      },
+      "Exited": {
+        "CreditScore": -0.026771448055271572,
+        "Age": 0.2852964638406702,
+        "Tenure": -0.013655799112819566,
+        "Balance": 0.11857690046280467,
+        "NumOfProducts": -0.04761061414947439,
+        "EstimatedSalary": 0.012489719907641044,
+        "Satisfaction Score": -0.005849198648614126,
+        "Point Earned": -0.004628173124983771,
+        "HasCrCard": -0.006976070976576932,
+        "IsActiveMember": -0.15635563349849313,
+        "Exited": 1.0,
+        "Complain": 0.9956925015718898
+      },
+      "Complain": {
+        "CreditScore": -0.027047974161615824,
+        "Age": 0.28352989418552416,
+        "Tenure": -0.013047251728499453,
+        "Balance": 0.11912425940485928,
+        "NumOfProducts": -0.04635680451854067,
+        "EstimatedSalary": 0.012493945330409376,
+        "Satisfaction Score": -0.004799075066955645,
+        "Point Earned": -0.0028932966589094757,
+        "HasCrCard": -0.007095209188390618,
+        "IsActiveMember": -0.15474125042882408,
+        "Exited": 0.9956925015718898,
+        "Complain": 1.0
+      }
+    },
+    "spearman_matrix": {
+      "CreditScore": {
+        "CreditScore": 1.0,
+        "Age": -0.007974044311824222,
+        "Tenure": 0.0011331741872317531,
+        "Balance": 0.005686570567648804,
+        "NumOfProducts": 0.012567727105426255,
+        "EstimatedSalary": 0.0012365243785171626,
+        "Satisfaction Score": -0.01323571286211019,
+        "Point Earned": 0.000872503301827293,
+        "HasCrCard": -0.0038018196644911805,
+        "IsActiveMember": 0.024262340713124088,
+        "Exited": -0.022948122706190337,
+        "Complain": -0.023308329986845785
+      },
+      "Age": {
+        "CreditScore": -0.007974044311824222,
+        "Age": 1.0,
+        "Tenure": -0.010404949259806085,
+        "Balance": 0.033304343569281254,
+        "NumOfProducts": -0.058566461949710664,
+        "EstimatedSalary": -0.0024314987597731075,
+        "Satisfaction Score": 0.0023473645480477975,
+        "Point Earned": -0.0012268600297809572,
+        "HasCrCard": -0.015278237103877702,
+        "IsActiveMember": 0.03983917343801006,
+        "Exited": 0.3240122740371194,
+        "Complain": 0.3222041505196006
+      },
+      "Tenure": {
+        "CreditScore": 0.0011331741872317531,
+        "Age": -0.010404949259806085,
+        "Tenure": 1.0,
+        "Balance": -0.009512895115085344,
+        "NumOfProducts": 0.012908053802897335,
+        "EstimatedSalary": 0.007778083762991343,
+        "Satisfaction Score": 0.008599814843631563,
+        "Point Earned": -0.010359926755695074,
+        "HasCrCard": 0.022354093855651763,
+        "IsActiveMember": -0.02867328605559643,
+        "Exited": -0.013628319047108517,
+        "Complain": -0.013036948893399852
+      },
+      "Balance": {
+        "CreditScore": 0.005686570567648804,
+        "Age": 0.033304343569281254,
+        "Tenure": -0.009512895115085344,
+        "Balance": 1.0,
+        "NumOfProducts": -0.3166265581132739,
+        "EstimatedSalary": 0.011778003481770119,
+        "Satisfaction Score": -0.005936387465772916,
+        "Point Earned": 0.01301762731967223,
+        "HasCrCard": -0.009834602700935929,
+        "IsActiveMember": -0.011496525779461567,
+        "Exited": 0.1110688048020786,
+        "Complain": 0.11159663758420799
+      },
+      "NumOfProducts": {
+        "CreditScore": 0.012567727105426255,
+        "Age": -0.058566461949710664,
+        "Tenure": 0.012908053802897335,
+        "Balance": -0.3166265581132739,
+        "NumOfProducts": 1.0,
+        "EstimatedSalary": 0.012569812938057647,
+        "Satisfaction Score": -0.012177001052447074,
+        "Point Earned": -0.014269402387249736,
+        "HasCrCard": 0.003858860313668448,
+        "IsActiveMember": 0.016291770565986952,
+        "Exited": -0.1250263259410446,
+        "Complain": -0.12349410683586894
+      },
+      "EstimatedSalary": {
+        "CreditScore": 0.0012365243785171626,
+        "Age": -0.0024314987597731075,
+        "Tenure": 0.007778083762991343,
+        "Balance": 0.011778003481770119,
+        "NumOfProducts": 0.012569812938057647,
+        "EstimatedSalary": 1.0,
+        "Satisfaction Score": -0.013744058570472876,
+        "Point Earned": -0.0016634966131863578,
+        "HasCrCard": -0.010040907408096484,
+        "IsActiveMember": -0.011469052124574152,
+        "Exited": 0.01247180484821324,
+        "Complain": 0.012475533582361602
+      },
+      "Satisfaction Score": {
+        "CreditScore": -0.01323571286211019,
+        "Age": 0.0023473645480477975,
+        "Tenure": 0.008599814843631563,
+        "Balance": -0.005936387465772916,
+        "NumOfProducts": -0.012177001052447074,
+        "EstimatedSalary": -0.013744058570472876,
+        "Satisfaction Score": 1.0,
+        "Point Earned": -0.014505272409078023,
+        "HasCrCard": -0.00021105778714770884,
+        "IsActiveMember": 0.010232117770701685,
+        "Exited": -0.005904878728283189,
+        "Complain": -0.004855270507253509
+      },
+      "Point Earned": {
+        "CreditScore": 0.000872503301827293,
+        "Age": -0.0012268600297809572,
+        "Tenure": -0.010359926755695074,
+        "Balance": 0.01301762731967223,
+        "NumOfProducts": -0.014269402387249736,
+        "EstimatedSalary": -0.0016634966131863578,
+        "Satisfaction Score": -0.014505272409078023,
+        "Point Earned": 1.0,
+        "HasCrCard": -0.0111679240400376,
+        "IsActiveMember": -0.005011069923900956,
+        "Exited": -0.004406130368269933,
+        "Complain": -0.0027358066182069647
+      },
+      "HasCrCard": {
+        "CreditScore": -0.0038018196644911805,
+        "Age": -0.015278237103877702,
+        "Tenure": 0.022354093855651763,
+        "Balance": -0.009834602700935929,
+        "NumOfProducts": 0.003858860313668448,
+        "EstimatedSalary": -0.010040907408096484,
+        "Satisfaction Score": -0.00021105778714770884,
+        "Point Earned": -0.0111679240400376,
+        "HasCrCard": 1.0,
+        "IsActiveMember": -0.011865636878457864,
+        "Exited": -0.006976070976576953,
+        "Complain": -0.007095209188390667
+      },
+      "IsActiveMember": {
+        "CreditScore": 0.024262340713124088,
+        "Age": 0.03983917343801006,
+        "Tenure": -0.02867328605559643,
+        "Balance": -0.011496525779461567,
+        "NumOfProducts": 0.016291770565986952,
+        "EstimatedSalary": -0.011469052124574152,
+        "Satisfaction Score": 0.010232117770701685,
+        "Point Earned": -0.005011069923900956,
+        "HasCrCard": -0.011865636878457864,
+        "IsActiveMember": 1.0,
+        "Exited": -0.15635563349849269,
+        "Complain": -0.1547412504288242
+      },
+      "Exited": {
+        "CreditScore": -0.022948122706190337,
+        "Age": 0.3240122740371194,
+        "Tenure": -0.013628319047108517,
+        "Balance": 0.1110688048020786,
+        "NumOfProducts": -0.1250263259410446,
+        "EstimatedSalary": 0.01247180484821324,
+        "Satisfaction Score": -0.005904878728283189,
+        "Point Earned": -0.004406130368269933,
+        "HasCrCard": -0.006976070976576953,
+        "IsActiveMember": -0.15635563349849269,
+        "Exited": 1.0,
+        "Complain": 0.9956925015718875
+      },
+      "Complain": {
+        "CreditScore": -0.023308329986845785,
+        "Age": 0.3222041505196006,
+        "Tenure": -0.013036948893399852,
+        "Balance": 0.11159663758420799,
+        "NumOfProducts": -0.12349410683586894,
+        "EstimatedSalary": 0.012475533582361602,
+        "Satisfaction Score": -0.004855270507253509,
+        "Point Earned": -0.0027358066182069647,
+        "HasCrCard": -0.007095209188390667,
+        "IsActiveMember": -0.1547412504288242,
+        "Exited": 0.9956925015718875,
+        "Complain": 1.0
+      }
+    },
+    "target_correlations": {
+      "CreditScore": {
+        "pearson_r": -0.026771448055272037,
+        "pearson_p": 0.007422037242734623,
+        "spearman_r": -0.022948122706190337,
+        "spearman_p": 0.021743007697479014,
+        "significant_a05": true
+      },
+      "Age": {
+        "pearson_r": 0.2852964638406681,
+        "pearson_p": 1.3467162476209374e-186,
+        "spearman_r": 0.3240122740371194,
+        "spearman_p": 3.920297345656902e-243,
+        "significant_a05": true
+      },
+      "Tenure": {
+        "pearson_r": -0.013655799112819526,
+        "pearson_p": 0.17210447548806318,
+        "spearman_r": -0.013628319047108513,
+        "spearman_p": 0.17296925252668835,
+        "significant_a05": false
+      },
+      "Balance": {
+        "pearson_r": 0.11857690046280439,
+        "pearson_p": 1.2092076077157206e-32,
+        "spearman_r": 0.11106880480207859,
+        "spearman_p": 8.014344026385379e-29,
+        "significant_a05": true
+      },
+      "NumOfProducts": {
+        "pearson_r": -0.04761061414947419,
+        "pearson_p": 1.9057769904591535e-06,
+        "spearman_r": -0.1250263259410446,
+        "spearman_p": 3.958018176177093e-36,
+        "significant_a05": true
+      },
+      "EstimatedSalary": {
+        "pearson_r": 0.01248971990764106,
+        "pearson_p": 0.21171461351490575,
+        "spearman_r": 0.012471804848213242,
+        "spearman_p": 0.21237070439077263,
+        "significant_a05": false
+      },
+      "Satisfaction Score": {
+        "pearson_r": -0.005849198648614083,
+        "pearson_p": 0.5586474054221399,
+        "spearman_r": -0.005904878728283188,
+        "spearman_p": 0.5549096386258695,
+        "significant_a05": false
+      },
+      "Point Earned": {
+        "pearson_r": -0.004628173124983735,
+        "pearson_p": 0.6435350184288953,
+        "spearman_r": -0.004406130368269932,
+        "spearman_p": 0.6595314972207115,
+        "significant_a05": false
+      },
+      "HasCrCard": {
+        "pearson_r": -0.006976070976576968,
+        "pearson_p": 0.48547218607925313,
+        "spearman_r": -0.006976070976576955,
+        "spearman_p": 0.48547218607924914,
+        "significant_a05": false
+      },
+      "IsActiveMember": {
+        "pearson_r": -0.15635563349849263,
+        "pearson_p": 9.355109807129616e-56,
+        "spearman_r": -0.15635563349849269,
+        "spearman_p": 9.355109807126442e-56,
+        "significant_a05": true
+      },
+      "Complain": {
+        "pearson_r": 0.9956925015718844,
+        "pearson_p": 0.0,
+        "spearman_r": 0.9956925015718875,
+        "spearman_p": 0.0,
+        "significant_a05": true
+      }
+    },
+    "target_correlations_ranked": [
+      {
+        "feature": "Complain",
+        "pearson_r": 0.9956925015718844,
+        "spearman_r": 0.9956925015718875
+      },
+      {
+        "feature": "Age",
+        "pearson_r": 0.2852964638406681,
+        "spearman_r": 0.3240122740371194
+      },
+      {
+        "feature": "IsActiveMember",
+        "pearson_r": -0.15635563349849263,
+        "spearman_r": -0.15635563349849269
+      },
+      {
+        "feature": "Balance",
+        "pearson_r": 0.11857690046280439,
+        "spearman_r": 0.11106880480207859
+      },
+      {
+        "feature": "NumOfProducts",
+        "pearson_r": -0.04761061414947419,
+        "spearman_r": -0.1250263259410446
+      },
+      {
+        "feature": "CreditScore",
+        "pearson_r": -0.026771448055272037,
+        "spearman_r": -0.022948122706190337
+      },
+      {
+        "feature": "Tenure",
+        "pearson_r": -0.013655799112819526,
+        "spearman_r": -0.013628319047108513
+      },
+      {
+        "feature": "EstimatedSalary",
+        "pearson_r": 0.01248971990764106,
+        "spearman_r": 0.012471804848213242
+      },
+      {
+        "feature": "HasCrCard",
+        "pearson_r": -0.006976070976576968,
+        "spearman_r": -0.006976070976576955
+      },
+      {
+        "feature": "Satisfaction Score",
+        "pearson_r": -0.005849198648614083,
+        "spearman_r": -0.005904878728283188
+      },
+      {
+        "feature": "Point Earned",
+        "pearson_r": -0.004628173124983735,
+        "spearman_r": -0.004406130368269932
+      }
+    ],
+    "chi2_tests_vs_target": {
+      "Geography": {
+        "chi2_statistic": 300.6264011211942,
+        "p_value": 5.245736109572763e-66,
+        "cramers_v": 0.1734,
+        "significant_a05": true
+      },
+      "Gender": {
+        "chi2_statistic": 112.39655374778587,
+        "p_value": 2.9253677618641993e-26,
+        "cramers_v": 0.106,
+        "significant_a05": true
+      },
+      "Card Type": {
+        "chi2_statistic": 5.053223027060927,
+        "p_value": 0.16794112067810218,
+        "cramers_v": 0.0225,
+        "significant_a05": false
+      }
+    }
+  },
+  "statistical_tests": {
+    "CreditScore": {
+      "group_churned": {
+        "mean": 645.4146221786065,
+        "median": 646.0,
+        "std": 100.3373510603117,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 651.8378548103492,
+        "median": 653.0,
+        "std": 95.65004704589509,
+        "n": 7962
+      },
+      "mean_difference": -6.423232631742735,
+      "mann_whitney_u": {
+        "statistic": 7846429.5,
+        "p_value": 0.02175071120128018,
+        "significant_a05": true
+      },
+      "welch_t_test": {
+        "statistic": -2.6030372644244175,
+        "p_value": 0.009284913465813381,
+        "significant_a05": true
+      },
+      "cohens_d": -0.06552866625778826
+    },
+    "Age": {
+      "group_churned": {
+        "mean": 44.83562315996075,
+        "median": 45.0,
+        "std": 9.759753596248872,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 37.40806330067822,
+        "median": 36.0,
+        "std": 10.125957162572139,
+        "n": 7962
+      },
+      "mean_difference": 7.427559859282525,
+      "mann_whitney_u": {
+        "statistic": 11878815.0,
+        "p_value": 2.7802649610221583e-230,
+        "significant_a05": true
+      },
+      "welch_t_test": {
+        "statistic": 30.420282283546275,
+        "p_value": 4.399451965598698e-179,
+        "significant_a05": true
+      },
+      "cohens_d": 0.7468981948896318
+    },
+    "Tenure": {
+      "group_churned": {
+        "mean": 4.934739941118744,
+        "median": 5.0,
+        "std": 2.936767783352584,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 5.032780708364733,
+        "median": 5.0,
+        "std": 2.8804955555924434,
+        "n": 7962
+      },
+      "mean_difference": -0.09804076724598865,
+      "mann_whitney_u": {
+        "statistic": 7955556.0,
+        "p_value": 0.1729583374544681,
+        "significant_a05": false
+      },
+      "welch_t_test": {
+        "statistic": -1.3500084977201094,
+        "p_value": 0.17711132973115426,
+        "significant_a05": false
+      },
+      "cohens_d": -0.033705257908788186
+    },
+    "Balance": {
+      "group_churned": {
+        "mean": 91109.47600588812,
+        "median": 109344.23,
+        "std": 58346.48319704544,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 72742.75066314996,
+        "median": 92063.06,
+        "std": 62851.57710762624,
+        "n": 7962
+      },
+      "mean_difference": 18366.725342738166,
+      "mann_whitney_u": {
+        "statistic": 9373909.5,
+        "p_value": 1.16876546862898e-28,
+        "significant_a05": true
+      },
+      "welch_t_test": {
+        "statistic": 12.47802583232175,
+        "p_value": 5.817634004614697e-35,
+        "significant_a05": true
+      },
+      "cohens_d": 0.3028769553304579
+    },
+    "NumOfProducts": {
+      "group_churned": {
+        "mean": 1.4754661432777232,
+        "median": 1.0,
+        "std": 0.8014080965668793,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 1.5442099974880683,
+        "median": 2.0,
+        "std": 0.5095419225572971,
+        "n": 7962
+      },
+      "mean_difference": -0.06874385421034512,
+      "mann_whitney_u": {
+        "statistic": 6835967.0,
+        "p_value": 7.279415251913107e-36,
+        "significant_a05": true
+      },
+      "welch_t_test": {
+        "statistic": -3.686387979558959,
+        "p_value": 0.00023235014274013512,
+        "significant_a05": true
+      },
+      "cohens_d": -0.10236997411299249
+    },
+    "EstimatedSalary": {
+      "group_churned": {
+        "mean": 101509.90878312069,
+        "median": 102489.33499999999,
+        "std": 57932.62339167381,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 99726.85314117056,
+        "median": 99620.355,
+        "std": 57399.95671665125,
+        "n": 7962
+      },
+      "mean_difference": 1783.0556419501227,
+      "mann_whitney_u": {
+        "statistic": 8258306.0,
+        "p_value": 0.21235576456250627,
+        "significant_a05": false
+      },
+      "welch_t_test": {
+        "statistic": 1.2421282993656462,
+        "p_value": 0.21428203203157642,
+        "significant_a05": false
+      },
+      "cohens_d": 0.030919912197968875
+    },
+    "Satisfaction Score": {
+      "group_churned": {
+        "mean": 2.9975466143277725,
+        "median": 3.0,
+        "std": 1.3993805581488923,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 3.017960311479528,
+        "median": 3.0,
+        "std": 1.4076446975196806,
+        "n": 7962
+      },
+      "mean_difference": -0.02041369715175545,
+      "mann_whitney_u": {
+        "statistic": 8046002.0,
+        "p_value": 0.5548863439266682,
+        "significant_a05": false
+      },
+      "welch_t_test": {
+        "statistic": -0.5869152568171575,
+        "p_value": 0.5573023606865116,
+        "significant_a05": false
+      },
+      "cohens_d": -0.014544656227413208
+    },
+    "Point Earned": {
+      "group_churned": {
+        "mean": 604.4484789008832,
+        "median": 610.5,
+        "std": 225.31530091377243,
+        "n": 2038
+      },
+      "group_retained": {
+        "mean": 607.0440844009042,
+        "median": 603.0,
+        "std": 226.09168162992057,
+        "n": 7962
+      },
+      "mean_difference": -2.5956055000210654,
+      "mann_whitney_u": {
+        "statistic": 8062041.5,
+        "p_value": 0.6595122287415172,
+        "significant_a05": false
+      },
+      "welch_t_test": {
+        "statistic": -0.46372006220720496,
+        "p_value": 0.6428801754239082,
+        "significant_a05": false
+      },
+      "cohens_d": -0.011500051002189801
+    }
+  },
+  "anova_kruskal_wallis": {
+    "CreditScore": {
+      "Geography": {
+        "anova_f_statistic": 0.3994198989465175,
+        "anova_p_value": 0.6707197151761685,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.5265433323104289,
+        "kruskal_wallis_p": 0.7685330845205337,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 0.08158713034212506,
+        "anova_p_value": 0.7751639097068396,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.09067880798944872,
+        "kruskal_wallis_p": 0.7633159591090295,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 0.7810294924693828,
+        "anova_p_value": 0.5043463759219244,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.664021773282486,
+        "kruskal_wallis_p": 0.4463760820680053,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 0.8864761142070914,
+        "anova_p_value": 0.44720409858905363,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.1211217254390635,
+        "kruskal_wallis_p": 0.5476515273784337,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 0.464167904051592,
+        "anova_p_value": 0.913748075968066,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 4.614312115984963,
+        "kruskal_wallis_p": 0.9154105107031874,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    },
+    "Age": {
+      "Geography": {
+        "anova_f_statistic": 12.106270732485997,
+        "anova_p_value": 5.6062204388282886e-06,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 35.85443295358887,
+        "kruskal_wallis_p": 1.637980805581375e-08,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 7.590957013093354,
+        "anova_p_value": 0.005876796622591806,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 8.870467510901696,
+        "kruskal_wallis_p": 0.002898209099977806,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 0.32019856800696955,
+        "anova_p_value": 0.8107849269650445,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.6881574492830931,
+        "kruskal_wallis_p": 0.8759858386866354,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 51.48310608786421,
+        "anova_p_value": 5.1765513661223125e-33,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 189.77719837052805,
+        "kruskal_wallis_p": 6.819266768642738e-41,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 1.5196946660896262,
+        "anova_p_value": 0.1252353014524983,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 14.614166056743539,
+        "kruskal_wallis_p": 0.14677458345242475,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    },
+    "Tenure": {
+      "Geography": {
+        "anova_f_statistic": 0.07769214312039406,
+        "anova_p_value": 0.925249785691092,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.17125575640714052,
+        "kruskal_wallis_p": 0.9179357515735089,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 2.1706655530216437,
+        "anova_p_value": 0.14069682488660587,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.2786445905169126,
+        "kruskal_wallis_p": 0.13116645905840238,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 1.3901243075838272,
+        "anova_p_value": 0.2437118610270572,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 4.239128494064854,
+        "kruskal_wallis_p": 0.23677346204823976,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 0.7722153493341688,
+        "anova_p_value": 0.5093685566932866,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.2175143595149462,
+        "kruskal_wallis_p": 0.5285068327106179,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": null,
+        "anova_p_value": 0.0,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 9998.999999999998,
+        "kruskal_wallis_p": 0.0,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 11
+      }
+    },
+    "Balance": {
+      "Geography": {
+        "anova_f_statistic": 958.4254463368383,
+        "anova_p_value": 0.0,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 1381.9344086211825,
+        "kruskal_wallis_p": 8.255739707922365e-301,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 1.4607726403969812,
+        "anova_p_value": 0.2268358090920028,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 1.823502071011088,
+        "kruskal_wallis_p": 0.17689698054190936,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 2.5435734816098625,
+        "anova_p_value": 0.05435456941616848,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 6.459212493179757,
+        "kruskal_wallis_p": 0.0912850160641118,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 521.9871533041901,
+        "anova_p_value": 3.696391694e-315,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 1166.8079341356536,
+        "kruskal_wallis_p": 1.1659712993388043e-252,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 0.6935811144374306,
+        "anova_p_value": 0.7314558778075088,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 7.685641735119457,
+        "kruskal_wallis_p": 0.6595123061582263,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    },
+    "NumOfProducts": {
+      "Geography": {
+        "anova_f_statistic": 0.7175834902822308,
+        "anova_p_value": 0.4879550504268573,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 6.215033405773232,
+        "kruskal_wallis_p": 0.04471185039962695,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 4.779297720670758,
+        "anova_p_value": 0.028826972896061936,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 1.6511977946601706,
+        "kruskal_wallis_p": 0.1987959832222913,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": true,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 2.2428999017457354,
+        "anova_p_value": 0.0811356129661088,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 7.964106840375757,
+        "kruskal_wallis_p": 0.046759362803648445,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": null,
+        "anova_p_value": 0.0,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 9999.000000000002,
+        "kruskal_wallis_p": 0.0,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 2.9378066614629836,
+        "anova_p_value": 0.0010947258350596665,
+        "anova_significant_a05": true,
+        "kruskal_wallis_h": 28.296206210663044,
+        "kruskal_wallis_p": 0.001618205672393973,
+        "kw_significant_a05": true,
+        "tukey_hsd_significant": true,
+        "n_groups": 11
+      }
+    },
+    "EstimatedSalary": {
+      "Geography": {
+        "anova_f_statistic": 0.5827609114534062,
+        "anova_p_value": 0.5583736355764126,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 1.127804410530589,
+        "kruskal_wallis_p": 0.5689844321399735,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 0.6580121102015771,
+        "anova_p_value": 0.4172819312945458,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.6836186793193609,
+        "kruskal_wallis_p": 0.4083434231017239,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 0.9275117448313084,
+        "anova_p_value": 0.4264240690723128,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.7899568407250674,
+        "kruskal_wallis_p": 0.4251558695148173,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 0.8580723754477232,
+        "anova_p_value": 0.462063370476127,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.589191391675814,
+        "kruskal_wallis_p": 0.4593875872151437,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 0.613685551817579,
+        "anova_p_value": 0.8035879974007655,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 6.168589092606175,
+        "kruskal_wallis_p": 0.800905752733778,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    },
+    "Satisfaction Score": {
+      "Geography": {
+        "anova_f_statistic": 0.05861147550053285,
+        "anova_p_value": 0.9430734290624712,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.11830085335898925,
+        "kruskal_wallis_p": 0.9425649715734156,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 0.0005851384435734937,
+        "anova_p_value": 0.9807018284942088,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.0004789091580039493,
+        "kruskal_wallis_p": 0.9825404933012148,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 0.590583186203855,
+        "anova_p_value": 0.6211167335600636,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 1.7678469185154717,
+        "kruskal_wallis_p": 0.6219566747703518,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 1.852486495587127,
+        "anova_p_value": 0.13531601581648736,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 5.562825143628939,
+        "kruskal_wallis_p": 0.13492889492106155,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 0.927436279557953,
+        "anova_p_value": 0.5063338093524873,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 9.242577630782993,
+        "kruskal_wallis_p": 0.5092473522929212,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    },
+    "Point Earned": {
+      "Geography": {
+        "anova_f_statistic": 0.9821076075258428,
+        "anova_p_value": 0.3745570550551621,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.030968115748554,
+        "kruskal_wallis_p": 0.3622270485334468,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 3
+      },
+      "Gender": {
+        "anova_f_statistic": 1.748938004148992,
+        "anova_p_value": 0.1860405461234694,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 1.71511608394743,
+        "kruskal_wallis_p": 0.19032292797742661,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 2
+      },
+      "Card Type": {
+        "anova_f_statistic": 0.20399008006976818,
+        "anova_p_value": 0.8936839466219166,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 0.5953290441490219,
+        "kruskal_wallis_p": 0.897500844630698,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "NumOfProducts": {
+        "anova_f_statistic": 0.9699192920186409,
+        "anova_p_value": 0.4057931742463933,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 2.901391605458364,
+        "kruskal_wallis_p": 0.4070798499337037,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 4
+      },
+      "Tenure": {
+        "anova_f_statistic": 0.9676576669737456,
+        "anova_p_value": 0.4693850487449456,
+        "anova_significant_a05": false,
+        "kruskal_wallis_h": 9.631066620774783,
+        "kruskal_wallis_p": 0.4734349197626351,
+        "kw_significant_a05": false,
+        "tukey_hsd_significant": false,
+        "n_groups": 11
+      }
+    }
+  },
+  "levene_test": {
+    "CreditScore": {
+      "statistic": 5.616580271197907,
+      "p_value": 0.017810201526064787,
+      "equal_variance_a05": false,
+      "variance_ratio": 1.100410907867235
+    },
+    "Age": {
+      "statistic": 12.968302092742793,
+      "p_value": 0.00031834455043990804,
+      "equal_variance_a05": false,
+      "variance_ratio": 0.9289782259907978
+    },
+    "Tenure": {
+      "statistic": 1.563649990169887,
+      "p_value": 0.2111608553361403,
+      "equal_variance_a05": true,
+      "variance_ratio": 1.0394528529645661
+    },
+    "Balance": {
+      "statistic": 148.82913744209952,
+      "p_value": 5.4483667743111555e-34,
+      "equal_variance_a05": false,
+      "variance_ratio": 0.8617811872224551
+    },
+    "NumOfProducts": {
+      "statistic": 0.32520149633223794,
+      "p_value": 0.5685111909618651,
+      "equal_variance_a05": true,
+      "variance_ratio": 2.4737033018443704
+    },
+    "EstimatedSalary": {
+      "statistic": 0.9847551636049815,
+      "p_value": 0.3210516612565421,
+      "equal_variance_a05": true,
+      "variance_ratio": 1.0186459452641186
+    },
+    "Satisfaction Score": {
+      "statistic": 0.00985004604366012,
+      "p_value": 0.9209438320509015,
+      "equal_variance_a05": true,
+      "variance_ratio": 0.9882926701277371
+    },
+    "Point Earned": {
+      "statistic": 0.05317387319106945,
+      "p_value": 0.8176344750718064,
+      "equal_variance_a05": true,
+      "variance_ratio": 0.9931439520819169
+    }
+  },
+  "eta_squared": {
+    "CreditScore": {
+      "Geography": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0003,
+        "effect_interpretation": "negligible"
+      }
+    },
+    "Age": {
+      "Geography": {
+        "eta_squared": 0.0024,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0008,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0152,
+        "effect_interpretation": "small"
+      }
+    },
+    "Tenure": {
+      "Geography": {
+        "eta_squared": 0.0,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0004,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      }
+    },
+    "Balance": {
+      "Geography": {
+        "eta_squared": 0.1609,
+        "effect_interpretation": "large"
+      },
+      "Gender": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0008,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.1354,
+        "effect_interpretation": "medium"
+      }
+    },
+    "NumOfProducts": {
+      "Geography": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0005,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0007,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "error": "Could not compute"
+      }
+    },
+    "EstimatedSalary": {
+      "Geography": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0003,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0003,
+        "effect_interpretation": "negligible"
+      }
+    },
+    "Satisfaction Score": {
+      "Geography": {
+        "eta_squared": 0.0,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0006,
+        "effect_interpretation": "negligible"
+      }
+    },
+    "Point Earned": {
+      "Geography": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      },
+      "Gender": {
+        "eta_squared": 0.0002,
+        "effect_interpretation": "negligible"
+      },
+      "Card Type": {
+        "eta_squared": 0.0001,
+        "effect_interpretation": "negligible"
+      },
+      "NumOfProducts": {
+        "eta_squared": 0.0003,
+        "effect_interpretation": "negligible"
+      }
+    }
+  },
+  "chi2_categoricals": {
+    "Geography × Gender": {
+      "chi2_statistic": 6.918159617700976,
+      "p_value": 0.03145869671789379,
+      "cramers_v": 0.0263,
+      "significant_a05": true
+    },
+    "Geography × Card Type": {
+      "chi2_statistic": 5.404414860242146,
+      "p_value": 0.49308390477696973,
+      "cramers_v": 0.0164,
+      "significant_a05": false
+    },
+    "Geography × HasCrCard": {
+      "chi2_statistic": 2.235276666547224,
+      "p_value": 0.3270512693820547,
+      "cramers_v": 0.015,
+      "significant_a05": false
+    },
+    "Geography × IsActiveMember": {
+      "chi2_statistic": 5.3046938050233425,
+      "p_value": 0.07048559597064499,
+      "cramers_v": 0.023,
+      "significant_a05": false
+    },
+    "Geography × Exited": {
+      "chi2_statistic": 300.6264011211942,
+      "p_value": 5.245736109572763e-66,
+      "cramers_v": 0.1734,
+      "significant_a05": true
+    },
+    "Geography × Complain": {
+      "chi2_statistic": 306.9111618426885,
+      "p_value": 2.2651031738286745e-67,
+      "cramers_v": 0.1752,
+      "significant_a05": true
+    },
+    "Gender × Card Type": {
+      "chi2_statistic": 12.02048469245887,
+      "p_value": 0.007313317007741216,
+      "cramers_v": 0.0347,
+      "significant_a05": true
+    },
+    "Gender × HasCrCard": {
+      "chi2_statistic": 0.30756077917984026,
+      "p_value": 0.5791808600631774,
+      "cramers_v": 0.0055,
+      "significant_a05": false
+    },
+    "Gender × IsActiveMember": {
+      "chi2_statistic": 4.992271810534194,
+      "p_value": 0.025460760707196245,
+      "cramers_v": 0.0223,
+      "significant_a05": true
+    },
+    "Gender × Exited": {
+      "chi2_statistic": 112.39655374778587,
+      "p_value": 2.9253677618641993e-26,
+      "cramers_v": 0.106,
+      "significant_a05": true
+    },
+    "Gender × Complain": {
+      "chi2_statistic": 112.44056703133633,
+      "p_value": 2.8611428485219414e-26,
+      "cramers_v": 0.106,
+      "significant_a05": true
+    },
+    "Card Type × HasCrCard": {
+      "chi2_statistic": 1.9186544516757085,
+      "p_value": 0.5894607107973859,
+      "cramers_v": 0.0139,
+      "significant_a05": false
+    },
+    "Card Type × IsActiveMember": {
+      "chi2_statistic": 5.380610108273794,
+      "p_value": 0.14595641871908302,
+      "cramers_v": 0.0232,
+      "significant_a05": false
+    },
+    "Card Type × Exited": {
+      "chi2_statistic": 5.053223027060927,
+      "p_value": 0.16794112067810218,
+      "cramers_v": 0.0225,
+      "significant_a05": false
+    },
+    "Card Type × Complain": {
+      "chi2_statistic": 4.94510461628343,
+      "p_value": 0.1758612702138595,
+      "cramers_v": 0.0222,
+      "significant_a05": false
+    },
+    "HasCrCard × IsActiveMember": {
+      "chi2_statistic": 1.3563282846024112,
+      "p_value": 0.2441748368876971,
+      "cramers_v": 0.0116,
+      "significant_a05": false
+    },
+    "HasCrCard × Exited": {
+      "chi2_statistic": 0.4494039375253385,
+      "p_value": 0.5026181509009862,
+      "cramers_v": 0.0067,
+      "significant_a05": false
+    },
+    "HasCrCard × Complain": {
+      "chi2_statistic": 0.4655599466507888,
+      "p_value": 0.4950369237813166,
+      "cramers_v": 0.0068,
+      "significant_a05": false
+    },
+    "IsActiveMember × Exited": {
+      "chi2_statistic": 243.6948024819593,
+      "p_value": 6.153167438113409e-55,
+      "cramers_v": 0.1561,
+      "significant_a05": true
+    },
+    "IsActiveMember × Complain": {
+      "chi2_statistic": 238.6813643478655,
+      "p_value": 7.624830420955412e-54,
+      "cramers_v": 0.1545,
+      "significant_a05": true
+    },
+    "Exited × Complain": {
+      "chi2_statistic": 9907.907035880155,
+      "p_value": 0.0,
+      "cramers_v": 0.9954,
+      "significant_a05": true
+    }
+  },
+  "interactions_2way": {
+    "CreditScore × Geography": {
+      "interaction_type": "numeric_vs_categorical",
+      "churn_rate_by_bins": {
+        "0": {
+          "France": 17.344589409056024,
+          "Germany": 35.6120826709062,
+          "Spain": 17.60797342192691
+        },
+        "1": {
+          "France": 17.489539748953973,
+          "Germany": 32.0,
+          "Spain": 16.615853658536587
+        },
+        "2": {
+          "France": 15.088529638183218,
+          "Germany": 28.055077452667813,
+          "Spain": 15.434083601286176
+        },
+        "3": {
+          "France": 14.790468364831552,
+          "Germany": 33.7442218798151,
+          "Spain": 17.08542713567839
+        }
+      }
+    }
+  },
+  "clustering": {
+    "elbow_inertias": [
+      69853.45786936581,
+      65092.50042583183,
+      61093.46588063493,
+      58227.235218602786,
+      55646.159839165106,
+      53503.1371777685,
+      51779.91868105127,
+      50233.10384417587,
+      48781.76593928764
+    ],
+    "silhouette_scores": [
+      0.1328998562275631,
+      0.10476176291797874,
+      0.10644299222828843,
+      0.10102102646428888,
+      0.09811691492922997,
+      0.10079733645218578,
+      0.09940328324695365,
+      0.09648902318296604,
+      0.0968363822942194
+    ],
+    "optimal_k": 2,
+    "cluster_profiles": {
+      "cluster_0": {
+        "size": 4207,
+        "churn_rate_pct": 17.45,
+        "feature_means": {
+          "CreditScore": 649.3011647254576,
+          "Age": 38.63251723318279,
+          "Tenure": 5.071547420965058,
+          "Balance": 12371.451064891846,
+          "NumOfProducts": 1.869027810791538,
+          "EstimatedSalary": 99459.79366294271,
+          "Satisfaction Score": 3.0175897314000477,
+          "Point Earned": 601.7456619919183
+        }
+      },
+      "cluster_1": {
+        "size": 5793,
+        "churn_rate_pct": 22.51,
+        "feature_means": {
+          "CreditScore": 651.4203348869326,
+          "Age": 39.13188330744001,
+          "Tenure": 4.970136371482824,
+          "Balance": 123047.1600638702,
+          "NumOfProducts": 1.2841360262385637,
+          "EstimatedSalary": 100548.083354048,
+          "Satisfaction Score": 3.0110478163300534,
+          "Point Earned": 609.9787674779907
+        }
+      }
+    }
+  },
+  "great_expectations_suggestions": {
+    "table_expectations": [
+      {
+        "type": "expect_table_row_count_to_be_between",
+        "rationale": "Dataset atual tem 10000 linhas. Tolerância ±20%.",
+        "kwargs": {
+          "min_value": 8000,
+          "max_value": 12000
+        }
+      },
+      {
+        "type": "expect_table_columns_to_match_set",
+        "rationale": "Schema estável (sem colunas extras ou faltando).",
+        "kwargs": {
+          "column_set": [
+            "CreditScore",
+            "Geography",
+            "Gender",
+            "Age",
+            "Tenure",
+            "Balance",
+            "NumOfProducts",
+            "HasCrCard",
+            "IsActiveMember",
+            "EstimatedSalary",
+            "Exited",
+            "Complain",
+            "Satisfaction Score",
+            "Card Type",
+            "Point Earned"
+          ],
+          "exact_match": true
+        }
+      }
+    ],
+    "column_expectations": {
+      "CreditScore": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 432.0 — 850.0",
+          "kwargs": {
+            "min_value": 432.0,
+            "max_value": 850.0
+          }
+        }
+      ],
+      "Age": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 21.0 — 72.0",
+          "kwargs": {
+            "min_value": 21.0,
+            "max_value": 72.0
+          }
+        }
+      ],
+      "Tenure": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 0.0 — 10.0",
+          "kwargs": {
+            "min_value": 0.0,
+            "max_value": 10.0
+          }
+        }
+      ],
+      "Balance": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 0.0 — 185967.98540000003",
+          "kwargs": {
+            "min_value": 0.0,
+            "max_value": 185967.98540000003
+          }
+        }
+      ],
+      "NumOfProducts": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 1.0 — 3.0",
+          "kwargs": {
+            "min_value": 1.0,
+            "max_value": 3.0
+          }
+        }
+      ],
+      "EstimatedSalary": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 1842.8253000000004 — 198069.7345",
+          "kwargs": {
+            "min_value": 1842.8253000000004,
+            "max_value": 198069.7345
+          }
+        }
+      ],
+      "Satisfaction Score": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 1.0 — 5.0",
+          "kwargs": {
+            "min_value": 1.0,
+            "max_value": 5.0
+          }
+        }
+      ],
+      "Point Earned": [
+        {
+          "type": "expect_column_values_to_not_be_null",
+          "rationale": "Coluna numérica obrigatória.",
+          "kwargs": {}
+        },
+        {
+          "type": "expect_column_values_to_be_between",
+          "rationale": "1st–99th percentile: 226.0 — 992.0",
+          "kwargs": {
+            "min_value": 226.0,
+            "max_value": 992.0
+          }
+        }
+      ],
+      "Geography": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['France', 'Germany', 'Spain']",
+          "kwargs": {
+            "value_set": [
+              "France",
+              "Germany",
+              "Spain"
+            ]
+          }
+        }
+      ],
+      "Gender": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['Female', 'Male']",
+          "kwargs": {
+            "value_set": [
+              "Female",
+              "Male"
+            ]
+          }
+        }
+      ],
+      "Card Type": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['DIAMOND', 'GOLD', 'PLATINUM', 'SILVER']",
+          "kwargs": {
+            "value_set": [
+              "DIAMOND",
+              "GOLD",
+              "PLATINUM",
+              "SILVER"
+            ]
+          }
+        }
+      ],
+      "HasCrCard": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['0', '1']",
+          "kwargs": {
+            "value_set": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ],
+      "IsActiveMember": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['0', '1']",
+          "kwargs": {
+            "value_set": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ],
+      "Exited": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['0', '1']",
+          "kwargs": {
+            "value_set": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ],
+      "Complain": [
+        {
+          "type": "expect_column_values_to_be_in_set",
+          "rationale": "Valores observados: ['0', '1']",
+          "kwargs": {
+            "value_set": [
+              "0",
+              "1"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

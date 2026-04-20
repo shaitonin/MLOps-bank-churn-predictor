@@ -1,0 +1,652 @@
+{
+  "success": true,
+  "total": 32,
+  "passed": 32,
+  "failed": 0,
+  "details": [
+    {
+      "type": "expect_table_row_count_to_be_between",
+      "column": null,
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 5000,
+        "max_value": 25000
+      },
+      "result": {
+        "observed_value": 10000
+      }
+    },
+    {
+      "type": "expect_table_columns_to_match_set",
+      "column": null,
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "column_set": [
+          "RowNumber",
+          "CustomerId",
+          "Surname",
+          "CreditScore",
+          "Geography",
+          "Gender",
+          "Age",
+          "Tenure",
+          "Balance",
+          "NumOfProducts",
+          "HasCrCard",
+          "IsActiveMember",
+          "EstimatedSalary",
+          "Exited",
+          "Complain",
+          "Satisfaction Score",
+          "Card Type",
+          "Point Earned"
+        ]
+      },
+      "result": {
+        "observed_value": [
+          "Age",
+          "Balance",
+          "Card Type",
+          "Complain",
+          "CreditScore",
+          "CustomerId",
+          "EstimatedSalary",
+          "Exited",
+          "Gender",
+          "Geography",
+          "HasCrCard",
+          "IsActiveMember",
+          "NumOfProducts",
+          "Point Earned",
+          "RowNumber",
+          "Satisfaction Score",
+          "Surname",
+          "Tenure"
+        ]
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Exited",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "Exited",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "CreditScore",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "CreditScore",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Age",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "Age",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 18.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Balance",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "Balance",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "EstimatedSalary",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "EstimatedSalary",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Point Earned",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "Point Earned",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "NumOfProducts",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "NumOfProducts",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Satisfaction Score",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "Satisfaction Score",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 1.0,
+        "max_value": 5.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Tenure",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_between",
+      "column": "Tenure",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "min_value": 0.0,
+        "max_value": 10.0
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Geography",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "Geography",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          "France",
+          "Spain",
+          "Germany"
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Gender",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "Gender",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          "Male",
+          "Female"
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Card Type",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "Card Type",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          "DIAMOND",
+          "GOLD",
+          "SILVER",
+          "PLATINUM"
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "HasCrCard",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "HasCrCard",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "IsActiveMember",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "IsActiveMember",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_not_be_null",
+      "column": "Complain",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data"
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    },
+    {
+      "type": "expect_column_values_to_be_in_set",
+      "column": "Complain",
+      "success": true,
+      "kwargs": {
+        "batch_id": "pipeline_source-input_data",
+        "value_set": [
+          0,
+          1
+        ]
+      },
+      "result": {
+        "element_count": 10000,
+        "unexpected_count": 0,
+        "unexpected_percent": 0.0,
+        "partial_unexpected_list": [],
+        "missing_count": 0,
+        "missing_percent": 0.0,
+        "unexpected_percent_total": 0.0,
+        "unexpected_percent_nonmissing": 0.0,
+        "partial_unexpected_counts": [],
+        "partial_unexpected_index_list": []
+      }
+    }
+  ]
+}

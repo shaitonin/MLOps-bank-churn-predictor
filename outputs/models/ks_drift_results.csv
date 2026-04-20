@@ -1,0 +1,21 @@
+feature,ks_stat,p_value,drift
+Point Earned,0.0362,0.1896,False
+EstimatedSalary,0.0281,0.4763,False
+geo_France,0.0276,0.4995,False
+BalanceSalaryRatio,0.0242,0.6655,False
+Gender_encoded,0.0236,0.6968,False
+Tenure,0.0224,0.7583,False
+Satisfaction Score,0.0221,0.7702,False
+CreditScore,0.0221,0.7702,False
+Age,0.0208,0.8326,False
+AgeGroup,0.0199,0.8685,False
+Balance,0.0196,0.8781,False
+geo_Spain,0.0174,0.9479,False
+HasZeroBalance,0.0152,0.9844,False
+AgeInactivity,0.0136,0.996,False
+NumOfProducts,0.0122,0.9992,False
+EngagementScore,0.0115,0.9997,False
+HasCrCard,0.0085,1.0,False
+IsActiveMember,0.0044,1.0,False
+HighRiskProducts,0.001,1.0,False
+geo_Germany,0.0102,1.0,False
