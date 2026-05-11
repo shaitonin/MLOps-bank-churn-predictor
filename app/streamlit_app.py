@@ -2,8 +2,6 @@
 streamlit_app.py — Visual churn prediction interface
 
 Start:
-  cd /Users/Shaiane/Projeto_MLOps_Bank_Churn
-  source venv/bin/activate
   streamlit run app/streamlit_app.py
 """
 import sys
@@ -16,6 +14,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.inference import ChurnPredictor
+from src.features import build_features
 
 # ── Page configuration ───────────────────────────────────────────────────────
 st.set_page_config(
@@ -58,40 +57,6 @@ with col_form:
         gender          = st.selectbox('Gender', ['Male', 'Female'])
 
     predict_btn = st.button('🔮 Predict Churn', use_container_width=True, type='primary')
-
-# ── Build features ────────────────────────────────────────────────────────────
-def build_features(credit_score, age, tenure, balance, num_products,
-                   has_cr_card, is_active, salary, geography, gender) -> dict:
-    age_group_young  = int(age < 30)
-    age_group_middle = int(30 <= age < 55)
-    age_group_senior = int(age >= 55)
-    engagement       = int(is_active) + int(has_cr_card) + min(num_products, 2) - 1
-    balance_ratio    = round(balance / max(salary, 1), 4)
-    products_year    = round(num_products / max(tenure, 1), 4)
-    age_inactivity   = age * int(not is_active)
-
-    return {
-        'CreditScore':       credit_score,
-        'Age':               age,
-        'Tenure':            tenure,
-        'Balance':           balance,
-        'NumOfProducts':     num_products,
-        'HasCrCard':         int(has_cr_card),
-        'IsActiveMember':    int(is_active),
-        'EstimatedSalary':   salary,
-        'Geography_France':  int(geography == 'France'),
-        'Geography_Germany': int(geography == 'Germany'),
-        'Geography_Spain':   int(geography == 'Spain'),
-        'Gender_Female':     int(gender == 'Female'),
-        'Gender_Male':       int(gender == 'Male'),
-        'AgeGroup_Middle':   age_group_middle,
-        'AgeGroup_Senior':   age_group_senior,
-        'AgeGroup_Young':    age_group_young,
-        'AgeInactivity':     age_inactivity,
-        'EngagementScore':   engagement,
-        'BalanceSalaryRatio': balance_ratio,
-        'ProductsPerYear':   products_year,
-    }
 
 # ── Prediction result ────────────────────────────────────────────────────────
 with col_result:

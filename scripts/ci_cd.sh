@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# ci_cd.sh — Pipeline CI/CD Simulado
-# Bank Customer Churn Prediction — Parte 6
+# ci_cd.sh — Simulated CI/CD Pipeline
+# Bank Customer Churn Prediction
 #
-# Simula um pipeline de integração e entrega contínua:
-#   1. Validação do ambiente
-#   2. Qualidade dos dados
-#   3. Treino e registro do modelo
-#   4. Validação das métricas (gate de qualidade)
-#   5. Deploy — promoção para Production no MLflow
-#   6. Smoke test da API
+# Simulates a continuous integration and delivery pipeline:
+#   1. Environment validation
+#   2. Data quality checks
+#   3. Model training and registration
+#   4. Metric validation (quality gate)
+#   5. Deploy — promotion to Production in MLflow
+#   6. API smoke test
 #
-# Uso:
+# Usage:
 #   chmod +x scripts/ci_cd.sh
 #   ./scripts/ci_cd.sh
 
 set -euo pipefail
 
-# ── Configuração ─────────────────────────────────────────────────────────────
+# ── Configuration ─────────────────────────────────────────────────────────────
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 VENV="$ROOT_DIR/venv/bin/activate"
 LOG_FILE="$ROOT_DIR/outputs/ci_cd.log"
@@ -35,34 +35,34 @@ log "═════════════════════════
 log "  CI/CD Pipeline — Bank Churn MLOps"
 log "══════════════════════════════════════════════"
 
-# ── Step 1: Ambiente ──────────────────────────────────────────────────────────
-log "[1/6] Validando ambiente..."
-source "$VENV" || err "venv não encontrado em $VENV"
-python -c "import lightgbm, mlflow, fastapi, sklearn" || err "Dependências ausentes"
-ok "Ambiente OK"
+# ── Step 1: Environment ───────────────────────────────────────────────────────
+log "[1/6] Validating environment..."
+source "$VENV" || err "venv not found at $VENV"
+python -c "import lightgbm, mlflow, fastapi, sklearn" || err "Missing dependencies"
+ok "Environment OK"
 
-# ── Step 2: Dados ─────────────────────────────────────────────────────────────
-log "[2/6] Verificando dados de features..."
+# ── Step 2: Data ──────────────────────────────────────────────────────────────
+log "[2/6] Checking feature data..."
 FEATURES_FILE="$ROOT_DIR/data/features/bank_churn_features.parquet"
-[ -f "$FEATURES_FILE" ] || err "Features não encontradas: $FEATURES_FILE"
+[ -f "$FEATURES_FILE" ] || err "Features not found: $FEATURES_FILE"
 
 N_ROWS=$(python -c "
 import pyarrow.parquet as pq
 t = pq.read_table('$FEATURES_FILE')
 print(len(t))
 ")
-log "  Amostras encontradas: $N_ROWS"
-[ "$N_ROWS" -gt 1000 ] || err "Dataset muito pequeno: $N_ROWS linhas"
-ok "Dados OK ($N_ROWS amostras)"
+log "  Samples found: $N_ROWS"
+[ "$N_ROWS" -gt 1000 ] || err "Dataset too small: $N_ROWS rows"
+ok "Data OK ($N_ROWS samples)"
 
-# ── Step 3: Treino e Deploy ───────────────────────────────────────────────────
-log "[3/6] Treinando e registrando modelo..."
+# ── Step 3: Training and Deploy ───────────────────────────────────────────────
+log "[3/6] Training and registering model..."
 cd "$ROOT_DIR"
-python notebooks/deploy.py >> "$LOG_FILE" 2>&1 || err "Falha no deploy.py"
-ok "Treino e registro concluídos"
+python notebooks/deploy.py >> "$LOG_FILE" 2>&1 || err "deploy.py failed"
+ok "Training and registration complete"
 
-# ── Step 4: Gate de Qualidade ─────────────────────────────────────────────────
-log "[4/6] Validando métricas do modelo..."
+# ── Step 4: Quality Gate ──────────────────────────────────────────────────────
+log "[4/6] Validating model metrics..."
 METRICS=$(python - <<'PYEOF'
 import sqlite3, json
 conn = sqlite3.connect("mlflow.db")
@@ -74,7 +74,7 @@ run = conn.execute("""
     ORDER BY r.start_time DESC LIMIT 1
 """).fetchone()
 if not run:
-    print(json.dumps({"error": "run não encontrado"}))
+    print(json.dumps({"error": "run not found"}))
 else:
     uuid = run[0]
     rows = conn.execute(
@@ -87,33 +87,30 @@ PYEOF
 AUC=$(echo "$METRICS"    | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('holdout_roc_auc', 0))")
 RECALL=$(echo "$METRICS" | python -c "import sys,json; d=json.load(sys.stdin); print(d.get('holdout_recall', 0))")
 
-log "  AUC    = $AUC  (mínimo = $MIN_AUC)"
-log "  Recall = $RECALL  (mínimo = $MIN_RECALL)"
+log "  AUC    = $AUC  (minimum = $MIN_AUC)"
+log "  Recall = $RECALL  (minimum = $MIN_RECALL)"
 
 PASS_AUC=$(python -c "print(1 if float('$AUC') >= $MIN_AUC else 0)")
 PASS_REC=$(python -c "print(1 if float('$RECALL') >= $MIN_RECALL else 0)")
 
-[ "$PASS_AUC" = "1" ]    || err "AUC abaixo do mínimo ($AUC < $MIN_AUC) — deploy bloqueado"
-[ "$PASS_REC" = "1" ]    || err "Recall abaixo do mínimo ($RECALL < $MIN_RECALL) — deploy bloqueado"
-ok "Gate de qualidade aprovado (AUC=$AUC | Recall=$RECALL)"
+[ "$PASS_AUC" = "1" ]    || err "AUC below minimum ($AUC < $MIN_AUC) — deploy blocked"
+[ "$PASS_REC" = "1" ]    || err "Recall below minimum ($RECALL < $MIN_RECALL) — deploy blocked"
+ok "Quality gate passed (AUC=$AUC | Recall=$RECALL)"
 
 # ── Step 5: API Smoke Test ────────────────────────────────────────────────────
-log "[5/6] Iniciando API e executando smoke test..."
+log "[5/6] Starting API and running smoke test..."
 
-# Inicia API em background
 uvicorn app.main:app --port 8001 --log-level error &
 API_PID=$!
 sleep 3
 
-# Health check
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8001/health)
 if [ "$HTTP_STATUS" != "200" ]; then
     kill $API_PID 2>/dev/null
-    err "Health check falhou (HTTP $HTTP_STATUS)"
+    err "Health check failed (HTTP $HTTP_STATUS)"
 fi
 ok "Health check OK"
 
-# Predict test
 PREDICT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
   -X POST http://localhost:8001/predict \
   -H "Content-Type: application/json" \
@@ -131,16 +128,16 @@ PREDICT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
 
 kill $API_PID 2>/dev/null
 
-[ "$PREDICT_STATUS" = "200" ] || err "Predict endpoint falhou (HTTP $PREDICT_STATUS)"
+[ "$PREDICT_STATUS" = "200" ] || err "Predict endpoint failed (HTTP $PREDICT_STATUS)"
 ok "Smoke test OK"
 
-# ── Step 6: Monitoramento inicial ─────────────────────────────────────────────
-log "[6/6] Executando ciclo de monitoramento inicial..."
-python notebooks/monitoring.py >> "$LOG_FILE" 2>&1 || warn "Monitoramento concluiu com avisos"
-ok "Monitoramento OK"
+# ── Step 6: Initial monitoring cycle ─────────────────────────────────────────
+log "[6/6] Running initial monitoring cycle..."
+python notebooks/monitoring.py >> "$LOG_FILE" 2>&1 || warn "Monitoring completed with warnings"
+ok "Monitoring OK"
 
-# ── Resultado Final ───────────────────────────────────────────────────────────
+# ── Final result ──────────────────────────────────────────────────────────────
 log "══════════════════════════════════════════════"
-ok "CI/CD PIPELINE CONCLUÍDO COM SUCESSO"
-log "  Log completo: $LOG_FILE"
+ok "CI/CD PIPELINE COMPLETED SUCCESSFULLY"
+log "  Full log: $LOG_FILE"
 log "══════════════════════════════════════════════"

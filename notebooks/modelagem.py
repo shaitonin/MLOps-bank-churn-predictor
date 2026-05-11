@@ -1,5 +1,5 @@
 # %%
-# Input  : data/features/bank_churn_features.parquet  ← preprocessamento.py
+# Input  : data/features/bank_churn_features.parquet  ← preprocessing_pipeline.py
 # Output : mlruns/           (MLFlow server — experiments, runs, artifacts)
 #          outputs/modeling/ (PNG plots saved locally before logging)
 #
@@ -404,7 +404,7 @@ logger.info('Reading: %s', features_file)
 if not features_file.exists():
     raise FileNotFoundError(
             f"File not found: {features_file}\n"
-            "Run preprocessamento.py before this script."
+            "Run preprocessing_pipeline.py before this script."
     )
 
 # %%

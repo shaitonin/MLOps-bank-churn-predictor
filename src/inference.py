@@ -1,21 +1,33 @@
 """
-inference.py — Loads the production MLflow model and runs predictions.
+inference.py — Loads the production model and runs predictions.
 
 Direct usage:
     from src.inference import ChurnPredictor
     predictor = ChurnPredictor()
-    result = predictor.predict(df)        # DataFrame with features
-    result = predictor.predict_single({   # dict with a single customer
+    result = predictor.predict(df)          # DataFrame with features
+    result = predictor.predict_single({     # dict with a single customer
         'Age': 42, 'Balance': 125000, ...
     })
+
+Model loading order:
+    1. MLflow Model Registry (requires mlflow + tracking URI configured)
+    2. Local file  outputs/models/pipeline_final.joblib  (default fallback)
+
+For cloud / Streamlit Cloud deployment the local file fallback is used
+automatically when MLflow is not reachable.
 """
 import json
+import os
 import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+
+# Allow overriding the model path via environment variable for cloud deploys.
+_DEFAULT_MODEL_PATH = ROOT_DIR / 'outputs' / 'models' / 'pipeline_final.joblib'
+_DEFAULT_SCHEMA_PATH = ROOT_DIR / 'outputs' / 'models' / 'model_schema.json'
 
 
 class ChurnPredictor:
@@ -32,24 +44,33 @@ class ChurnPredictor:
         model_name: str = 'bank-churn-lgbm',
         stage: str = 'Production',
         threshold: float | None = None,
+        model_path: str | None = None,
     ):
-        self.model_name = model_name
-        self.stage      = stage
-        self._pipeline  = None
-        self._schema    = self._load_schema()
-        self._threshold = threshold if threshold is not None else self._schema.get('threshold', 0.40)
+        self.model_name  = model_name
+        self.stage       = stage
+        self._pipeline   = None
+        self._schema     = self._load_schema()
+        self._threshold  = threshold if threshold is not None else self._schema.get('threshold', 0.40)
+        self._model_path = Path(model_path) if model_path else Path(
+            os.environ.get('MODEL_PATH', str(_DEFAULT_MODEL_PATH))
+        )
         self._load_model()
 
     # ── Loading ──────────────────────────────────────────────────────────────
 
     def _load_schema(self) -> dict:
-        schema_path = ROOT_DIR / 'outputs' / 'models' / 'model_schema.json'
+        schema_path = Path(os.environ.get('SCHEMA_PATH', str(_DEFAULT_SCHEMA_PATH)))
         if schema_path.exists():
             return json.loads(schema_path.read_text())
         return {'threshold': 0.40, 'feature_columns': [], 'n_features': 20}
 
     def _load_model(self):
-        """Try MLflow first, fall back to local file."""
+        """Try MLflow first, fall back to local joblib file."""
+        if not self._try_mlflow():
+            self._load_local()
+
+    def _try_mlflow(self) -> bool:
+        """Attempt to load from MLflow Registry. Returns True on success."""
         try:
             import mlflow
             import mlflow.sklearn
@@ -60,17 +81,22 @@ class ChurnPredictor:
             resolved     = tracking_uri if any(tracking_uri.startswith(s) for s in _known) \
                            else (ROOT_DIR / tracking_uri).as_uri()
             mlflow.set_tracking_uri(resolved)
-            model_uri        = f'models:/{self.model_name}/{self.stage}'
-            self._pipeline   = mlflow.sklearn.load_model(model_uri)
-            self._source     = f'mlflow:{model_uri}'
+            model_uri      = f'models:/{self.model_name}/{self.stage}'
+            self._pipeline = mlflow.sklearn.load_model(model_uri)
+            self._source   = f'mlflow:{model_uri}'
+            return True
         except Exception:
-            local_path = ROOT_DIR / 'outputs' / 'models' / 'pipeline_final.joblib'
-            if not local_path.exists():
-                raise FileNotFoundError(
-                    'Model not found. Run notebooks/deploy.py first.'
-                )
-            self._pipeline = joblib.load(local_path)
-            self._source   = f'local:{local_path}'
+            return False
+
+    def _load_local(self):
+        """Load from local joblib file (always available in the repo)."""
+        if not self._model_path.exists():
+            raise FileNotFoundError(
+                f'Model not found at {self._model_path}. '
+                'Run notebooks/deploy.py to generate it, or set MODEL_PATH env var.'
+            )
+        self._pipeline = joblib.load(self._model_path)
+        self._source   = f'local:{self._model_path.name}'
 
     # ── Inference ────────────────────────────────────────────────────────────
 

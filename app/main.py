@@ -2,13 +2,11 @@
 main.py — Churn Inference API (FastAPI)
 
 Endpoints:
-  GET  /health       — API status and model version
-  POST /predict      — prediction for a single customer
-  POST /predict/batch — prediction for multiple customers
+  GET  /health            — API status and model version
+  POST /predict           — prediction for a single customer
+  POST /predict/batch     — prediction for multiple customers
 
 Start:
-  cd /Users/Shaiane/Projeto_MLOPs_Bank_Churn-English
-  source venv/bin/activate
   uvicorn app.main:app --reload --port 8000
 """
 import sys
@@ -46,28 +44,28 @@ def load_model():
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class CustomerFeatures(BaseModel):
-    CreditScore:      float = Field(..., example=650)
-    Age:              float = Field(..., example=42)
-    Tenure:           float = Field(..., example=5)
-    Balance:          float = Field(..., example=125000.0)
-    NumOfProducts:    float = Field(..., example=2)
-    HasCrCard:        float = Field(..., example=1)
-    IsActiveMember:   float = Field(..., example=1)
-    EstimatedSalary:  float = Field(..., example=80000.0)
-    Geography_France: float = Field(0, example=1)
-    Geography_Germany:float = Field(0, example=0)
-    Geography_Spain:  float = Field(0, example=0)
-    Gender_Female:    float = Field(0, example=0)
-    Gender_Male:      float = Field(1, example=1)
-    AgeGroup_Middle:  float = Field(0, example=1)
-    AgeGroup_Senior:  float = Field(0, example=0)
-    AgeGroup_Young:   float = Field(0, example=0)
-    AgeInactivity:        float = Field(0, example=0)
-    EngagementScore:      float = Field(0, example=2)
-    BalanceSalaryRatio:   float = Field(0, example=1.56)
-    ProductsPerYear:      float = Field(0, example=0.4)
+    CreditScore:       float = Field(..., example=650)
+    Age:               float = Field(..., example=42)
+    Tenure:            float = Field(..., example=5)
+    Balance:           float = Field(..., example=125000.0)
+    NumOfProducts:     float = Field(..., example=2)
+    HasCrCard:         float = Field(..., example=1)
+    IsActiveMember:    float = Field(..., example=1)
+    EstimatedSalary:   float = Field(..., example=80000.0)
+    Geography_France:  float = Field(0, example=1)
+    Geography_Germany: float = Field(0, example=0)
+    Geography_Spain:   float = Field(0, example=0)
+    Gender_Female:     float = Field(0, example=0)
+    Gender_Male:       float = Field(1, example=1)
+    AgeGroup_Middle:   float = Field(0, example=1)
+    AgeGroup_Senior:   float = Field(0, example=0)
+    AgeGroup_Young:    float = Field(0, example=0)
+    AgeInactivity:     float = Field(0, example=0)
+    EngagementScore:   float = Field(0, example=2)
+    BalanceSalaryRatio:float = Field(0, example=1.56)
+    ProductsPerYear:   float = Field(0, example=0.4)
 
-    model_config = {'extra': 'allow'}
+    model_config = {'extra': 'forbid'}
 
 
 class PredictionResponse(BaseModel):

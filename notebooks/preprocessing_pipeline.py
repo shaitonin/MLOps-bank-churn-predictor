@@ -51,7 +51,7 @@ config.update(preprocessing)  # Merge configs (pipeline + preprocessing)
 # Configure logger
 log_cfg = config.get('logging')
 logger = get_logger(
-    name='preprocessamento',
+    name='preprocessing',
     logging_config=log_cfg
 )
 
@@ -97,7 +97,7 @@ logger.info('Reading: %s', parquet_path)
 if not parquet_path.exists():
     raise FileNotFoundError(
         f"Parquet file not found: {parquet_path}\n"
-        "Run ingestao.py and qualidade.py before this script."
+        "Run ingestion_pipeline.py and qualidade.py before this script."
     )
 
 # %%

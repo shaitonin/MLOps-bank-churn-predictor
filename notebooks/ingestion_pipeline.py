@@ -18,7 +18,7 @@ for _p in PATHS_LIST:
 
 from src.utils.config_loader import load_yaml  # importing the function from config_loader.py to read the configuration files
 from src.utils.logger import get_logger
-from src.dowloader import check_kaggle_credentials, list_remote_files, download_dataset
+from src.downloader import check_kaggle_credentials, list_remote_files, download_dataset
 from src.ingestion import ingest_csv_to_parquet
 # %%
 # read configuration files
@@ -31,7 +31,7 @@ log_cfg = pipeline_cfg.get('logging')
 
 # create logger
 logger = get_logger(
-    name='ingestao',
+    name='ingestion',
     logging_config=log_cfg
 )
 

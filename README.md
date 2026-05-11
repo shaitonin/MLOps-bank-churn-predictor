@@ -1,125 +1,129 @@
 # Bank Customer Churn Prediction — MLOps
 
-MLOps project for predicting bank customer churn. Developed as a practical assignment for the MLOps course at Instituto INFNET.
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
+![CI](https://img.shields.io/github/actions/workflow/status/shaitonin/bank-churn-mlops-english/ci.yml?label=CI&logo=github)
+![LightGBM](https://img.shields.io/badge/Model-LightGBM-brightgreen)
+![MLflow](https://img.shields.io/badge/Tracking-MLflow-blue?logo=mlflow)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
+
+End-to-end MLOps project for predicting bank customer churn. Developed as a practical assignment for the MLOps course at Instituto INFNET.
 
 The objective is to identify, in advance, customers with a high probability of ending their relationship with the bank — before explicit signs become available — allowing proactive retention actions.
+
+> **Live demo →** *(deploy to Streamlit Cloud and paste the link here)*
+
+---
+
+## Demo
+
+![Streamlit dashboard screenshot](docs/screenshot.png)
+
+---
+
+## Final Model Results
+
+**LightGBM** with hyperparameters optimized via Optuna (30 trials, TPE Sampler), without dimensionality reduction, with SMOTE for class imbalance handling.
+
+| Metric | Value |
+|--------|-------|
+| ROC-AUC (holdout) | **0.873** |
+| Churn Recall (holdout) | **0.816** |
+| F1-score (holdout) | 0.597 |
+| Decision threshold | 0.40 |
+
+**Pipeline:**
+```
+DataImputer → FeatureReducer(none) → SMOTE → LGBMClassifier
+```
 
 ---
 
 ## Project Structure
 
 ```
-├── app
-│   ├── __init__.py
-│   ├── main.py
-│   └── streamlit_app.py
-├── config
+├── app/
+│   ├── main.py                   # FastAPI REST API
+│   └── streamlit_app.py          # Interactive Streamlit dashboard
+├── config/
 │   ├── data.yaml
 │   ├── modeling.yaml
 │   ├── pipeline.yaml
 │   ├── preprocessing.yaml
 │   └── quality.yaml
-├── data
-│   ├── features
-│   │   └── bank_churn_features.parquet
-│   ├── processed
-│   │   └── bank_churn.parquet
-│   └── raw
-│       └── Customer-Churn-Records.csv
-├── docs
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── features/
+├── docs/
 │   └── eda_report.md
-├── eda
-│   ├── __init__.py
-│   └── eda_analysis.py
-├── notebooks
-│   ├── deploy.py
-│   ├── dimensionality_reduction.py
-│   ├── ingestao.py
+├── eda/
+│   └── eda_analysis.py           # Full EDA engine (1 100+ lines)
+├── notebooks/                    # Pipeline stages (run in order)
+│   ├── ingestion_pipeline.py
+│   ├── qualidade.py
+│   ├── preprocessing_pipeline.py
 │   ├── modelagem.py
-│   ├── monitoring.py
-│   ├── preprocessamento.py
-│   └── qualidade.py
-├── outputs
-│   ├── eda
-│   │   ├── plots
-│   │   │   ├── 01_target_distribution.png
-│   │   │   ├── 02_numeric_distributions.png
-│   │   │   ├── 03_numeric_by_target_boxplot.png
-│   │   │   ├── 04_correlation_heatmap.png
-│   │   │   ├── 05_categorical_by_target.png
-│   │   │   ├── 06_age_distribution_by_churn.png
-│   │   │   ├── 07_balance_distribution.png
-│   │   │   ├── 08_creditscore_by_geography.png
-│   │   │   ├── 09_satisfaction_and_points.png
-│   │   │   ├── 10_products_and_tenure_churn.png
-│   │   │   ├── 11_churn_by_geography.png
-│   │   │   ├── 12_churn_by_gender.png
-│   │   │   ├── 13_churn_by_age_bins.png
-│   │   │   ├── 14_cumulative_churn_by_tenure.png
-│   │   │   └── 15_active_member_complain_churn.png
-│   │   └── eda_report_20260418_101339.json
-│   ├── modeling
-│   │   ├── class_distribution.png
-│   │   ├── confusion_matrix_lightgbm.png
-│   │   ├── confusion_matrix_lightgbm_holdout.png
-│   │   ├── cv_fold_comparison_lightgbm.png
-│   │   ├── feature_importance_lightgbm.png
-│   │   ├── pr_curve_lightgbm.png
-│   │   ├── pr_curve_lightgbm_holdout.png
-│   │   ├── roc_curve_lightgbm.png
-│   │   ├── roc_curve_lightgbm_holdout.png
-│   │   ├── shap_summary_lightgbm.png
-│   │   └── threshold_analysis_lightgbm.png
-│   ├── models
-│   │   ├── ks_drift_results.csv
-│   │   ├── model_schema.json
-│   │   └── pipeline_final.joblib
-│   └── quality
-│       ├── quality_report_20260408_200934.json
-│       └── quality_report_20260413_200544.json
-├── scripts
+│   ├── dimensionality_reduction.py
+│   ├── deploy.py
+│   └── monitoring.py
+├── outputs/
+│   ├── eda/plots/
+│   ├── modeling/
+│   └── models/
+│       ├── pipeline_final.joblib
+│       └── model_schema.json
+├── scripts/
 │   └── ci_cd.sh
-├── src
-│   ├── utils
-│   │   ├── __init__.py
-│   │   ├── config_loader.py
-│   │   └── logger.py
-│   ├── __init__.py
-│   ├── dowloader.py
+├── src/
+│   ├── downloader.py
+│   ├── features.py               # Shared feature engineering
 │   ├── feature_reducer.py
 │   ├── inference.py
 │   ├── ingestion.py
 │   ├── preprocessing.py
-│   └── quality_checks.py
-├── README.md
-├── mlflow.db
-├── relatorio_tecnico.md
-└── requirements.txt
+│   ├── quality_checks.py
+│   └── utils/
+├── tests/
+│   ├── test_features.py
+│   ├── test_inference.py
+│   └── test_preprocessing.py
+├── .github/workflows/ci.yml      # GitHub Actions CI
+├── .streamlit/config.toml
+├── docker-compose.yml
+├── Dockerfile
+├── Dockerfile.streamlit
+├── requirements.txt
+└── technical_report.md
 ```
 
 ---
 
-## Dataset
+## Quick Start
 
-**Bank Customer Churn** — Kaggle  
-10,000 customers, 18 features, target variable `Exited` (churn = 1).  
-Imbalance: 79.6% non-churn / 20.4% churn (ratio 3.91:1).
-
----
-
-## Installation
+### Option 1 — Docker (recommended)
 
 ```bash
 git clone <repo>
-cd Projeto_MLOps_Bank_Churn
+cd bank-churn-mlops-english
+docker compose up
+```
+
+- Streamlit dashboard: http://localhost:8501
+- FastAPI docs: http://localhost:8000/docs
+
+### Option 2 — Local
+
+```bash
+git clone <repo>
+cd bank-churn-mlops-english
 
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate          # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-For XGBoost on Mac:
+For XGBoost on macOS:
 ```bash
 brew install libomp
 ```
@@ -129,14 +133,14 @@ brew install libomp
 ## Running the Complete Pipeline
 
 ```bash
-# 1. Ingestion
-python notebooks/ingestao.py
+# 1. Data ingestion (requires Kaggle credentials in secrets.env)
+python notebooks/ingestion_pipeline.py
 
-# 2. Data quality
+# 2. Data quality checks
 python notebooks/qualidade.py
 
 # 3. Preprocessing and feature engineering
-python notebooks/preprocessamento.py
+python notebooks/preprocessing_pipeline.py
 
 # 4. Experimentation (Optuna + MLflow — ~6h for 30 trials × 4 models)
 python notebooks/modelagem.py
@@ -144,17 +148,25 @@ python notebooks/modelagem.py
 # 5. Dimensionality reduction experiment
 python notebooks/dimensionality_reduction.py
 
-# 6. Deploy final model
+# 6. Deploy final model to MLflow registry
 python notebooks/deploy.py
 
 # 7. Post-deploy monitoring
 python notebooks/monitoring.py
 ```
 
-Or via simulated CI/CD pipeline:
+Or via the CI/CD pipeline script:
 ```bash
 chmod +x scripts/ci_cd.sh
 ./scripts/ci_cd.sh
+```
+
+---
+
+## Running the Tests
+
+```bash
+pytest tests/ -v --tb=short
 ```
 
 ---
@@ -163,7 +175,7 @@ chmod +x scripts/ci_cd.sh
 
 ### MLflow UI
 ```bash
-mlflow ui --backend-store-uri sqlite:////absolute/path/mlflow.db
+mlflow ui --backend-store-uri sqlite:///mlflow.db
 # http://localhost:5000
 ```
 
@@ -181,50 +193,54 @@ streamlit run app/streamlit_app.py
 
 ---
 
-## Final Model
+## Deploying to Streamlit Cloud
 
-**LightGBM** with hyperparameters optimized via Optuna (30 trials, TPE Sampler), without dimensionality reduction, with SMOTE for imbalance handling.
+1. Push this repository to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io) and connect your repo
+3. Set **Main file path** to `app/streamlit_app.py`
+4. Click **Deploy** — no secrets needed (the model file is included in the repo)
 
-| Metric | Value |
-|---------|-------|
-| ROC-AUC (holdout) | 0.873 |
-| Churn recall (holdout) | 0.816 |
-| F1-score (holdout) | 0.597 |
-| Decision threshold | 0.40 |
+---
 
-**Pipeline:**
-```
-DataImputer → FeatureReducer(none) → SMOTE → LGBMClassifier
-```
+## Dataset
+
+**Bank Customer Churn** — Kaggle
+10,000 customers · 18 features · target variable `Exited` (churn = 1)
+Class imbalance: 79.6% non-churn / 20.4% churn (ratio 3.91:1)
 
 ---
 
 ## Technologies
 
 | Category | Technologies |
-|-----------|------------|
-| Modeling | scikit-learn, LightGBM, XGBoost, imbalanced-learn |
-| Optimization | Optuna (TPE Sampler) |
+|----------|-------------|
+| Modeling | scikit-learn, LightGBM, XGBoost, imbalanced-learn (SMOTE) |
+| Optimization | Optuna (TPE Sampler, 30 trials) |
 | Tracking | MLflow (SQLite backend) |
+| Interpretability | SHAP |
 | Data Quality | Great Expectations |
 | Deploy | FastAPI, Streamlit, joblib |
 | Monitoring | SciPy (KS test), PSI |
+| Containers | Docker, docker-compose |
+| CI/CD | GitHub Actions |
+| Testing | pytest |
 
 ---
 
 ## EDA Report
 
-Automated report generated at `outputs/eda/eda_report_*.json` with results of statistical tests (Mann-Whitney U, ANOVA, Kruskal-Wallis, Tukey HSD, chi-squared, Cramér's V), K-Means segmentation, and 15 visualizations saved at `outputs/eda/plots/`.
+Automated statistical report at `outputs/eda/eda_report_*.json` covering:
+Mann-Whitney U, ANOVA, Kruskal-Wallis, Tukey HSD, chi-squared, Cramér's V, K-Means segmentation, and 15 visualizations at `outputs/eda/plots/`.
 
 ---
 
 ## Technical Report
 
-The full report is at `relatorio_tecnico.md` and covers:
+Full report at `technical_report.md`:
 
 - **Part 1** — Problem definition, prior experiments, and success criteria
-- **Part 2** — Data pipeline, quality, and feature engineering
+- **Part 2** — Data pipeline, quality diagnosis, and feature engineering
 - **Part 3** — Systematic experimentation with 4 models and Optuna
-- **Part 4** — Dimensionality reduction analysis (PCA, LDA, t-SNE)
+- **Part 4** — Dimensionality reduction analysis (PCA, LDA)
 - **Part 5** — Final model selection and justification
 - **Part 6** — Deploy, monitoring, CI/CD, and retraining strategy

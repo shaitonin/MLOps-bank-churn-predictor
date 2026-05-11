@@ -105,7 +105,7 @@ logger.info('MLflow URI: %s | Experiment: %s', _resolved_uri, experiment_name)
 # %%
 features_file = ROOT_DIR / 'data' / 'features' / 'bank_churn_features.parquet'
 if not features_file.exists():
-    raise FileNotFoundError(f"Run preprocessamento.py first: {features_file}")
+    raise FileNotFoundError(f"Run preprocessing_pipeline.py first: {features_file}")
 
 df         = pq.read_table(str(features_file)).to_pandas()
 target_col = config.get('feature_selection', {}).get('target', 'Exited')
