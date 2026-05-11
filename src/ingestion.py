@@ -39,7 +39,7 @@ def ingest_csv_to_parquet(
         ValueError:         If required columns are missing from the data.
         RuntimeError:       On read/write failures.
     """
-    #pyarrow transforma os arquivo csv em parquet que eh um arquivo binario
+    # pyarrow converts the CSV files into Parquet, which is a binary columnar format
     import pyarrow as pa
     import pyarrow.csv as pa_csv
     import pyarrow.parquet as pq
@@ -179,7 +179,8 @@ def _validate_required_columns(
         ValueError: If any required column is absent from the schema.
     """
     import pyarrow.parquet as pq
-#verificar as colunas que deveriam ter e as que estao realmente no arquivo parquet, se tiver alguma coluna faltando ele levanta um erro
+    # verify the columns that should exist against the columns actually in the Parquet file;
+    # if any required column is missing, raise an error
     schema = pq.read_schema(str(parquet_path))
     actual_columns = set(schema.names)
     missing = [col for col in required_columns if col not in actual_columns]

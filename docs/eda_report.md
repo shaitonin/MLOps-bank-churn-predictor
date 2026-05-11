@@ -1,435 +1,435 @@
-# Análise Exploratória de Dados — Bank Customer Churn
+# Exploratory Data Analysis — Bank Customer Churn
 
 > **Dataset:** `Customer-Churn-Records.csv` — Kaggle (`radheshyamkollipara/bank-customer-churn`)
-> **Análise gerada em:** 11 de abril de 2026
-> **Script:** `eda/eda_analysis.py` | **Relatório JSON:** `outputs/eda/eda_report_20260411_114506.json`
+> **Analysis generated on:** April 11, 2026
+> **Script:** `eda/eda_analysis.py` | **JSON Report:** `outputs/eda/eda_report_20260411_114506.json`
 
 ---
 
-## Sumário
+## Table of Contents
 
-1. [Contexto de negócio e valor estratégico](#1-contexto-de-negócio-e-valor-estratégico)
-2. [Visão geral técnica do dataset](#2-visão-geral-técnica-do-dataset)
-3. [Qualidade dos dados](#3-qualidade-dos-dados)
-4. [Distribuição da variável alvo — Churn](#4-distribuição-da-variável-alvo--churn)
-5. [Análise das variáveis](#5-análise-das-variáveis)
-6. [Principais achados e implicações estratégicas](#6-principais-achados-e-implicações-estratégicas)
-7. [Alerta crítico: risco de data leakage](#7-alerta-crítico-risco-de-data-leakage)
-8. [Recomendações para o modelo de Machine Learning](#8-recomendações-para-o-modelo-de-machine-learning)
-9. [Parâmetros derivados para Great Expectations](#9-parâmetros-derivados-para-great-expectations)
+1. [Business context and strategic value](#1-business-context-and-strategic-value)
+2. [Technical overview of the dataset](#2-technical-overview-of-the-dataset)
+3. [Data quality](#3-data-quality)
+4. [Distribution of the target variable — Churn](#4-distribution-of-the-target-variable--churn)
+5. [Analysis of variables](#5-analysis-of-variables)
+6. [Key findings and strategic implications](#6-key-findings-and-strategic-implications)
+7. [Critical alert: risk of data leakage](#7-critical-alert-risk-of-data-leakage)
+8. [Recommendations for the Machine Learning model](#8-recommendations-for-the-machine-learning-model)
+9. [Parameters derived for Great Expectations](#9-parameters-derived-for-great-expectations)
 
 ---
 
-## 1. Contexto de negócio e valor estratégico
+## 1. Business Context and Strategic Value
 
-**Churn** — a saída voluntária de clientes — é um dos principais vetores de perda de receita recorrente no setor bancário. Este dataset registra o histórico de **10.000 clientes** de um banco europeu com operações na **França, Alemanha e Espanha**, consolidando variáveis comportamentais, financeiras e de perfil para cada cliente. A variável alvo (`Exited`) indica se o cliente encerrou o relacionamento com o banco.
+**Churn** — the voluntary departure of customers — is one of the primary drivers of recurring revenue loss in the banking sector. This dataset records the history of **10,000 customers** from a European bank with operations in **France, Germany, and Spain**, consolidating behavioral, financial, and profile variables for each customer. The target variable (`Exited`) indicates whether the customer terminated the relationship with the bank.
 
-O objetivo analítico é identificar, de forma proativa e com antecedência, quais clientes apresentam maior probabilidade de saída — viabilizando intervenções de retenção direcionadas antes que a decisão seja tomada.
+The analytical objective is to identify proactively and in advance which customers have the highest probability of departure — enabling targeted retention interventions before the decision is finalized.
 
-As variáveis disponíveis cobrem quatro dimensões:
+The available variables cover four dimensions:
 
-- **Perfil financeiro:** score de crédito, saldo em conta, salário estimado
-- **Relacionamento com o banco:** tempo de conta (tenure), número de produtos contratados, atividade, pontos acumulados, possui cartão de crédito, tipo de cartão
-- **Dados demográficos:** idade, gênero, país
-- **Experiência do cliente:** nota de satisfação, histórico de reclamações
+- **Financial profile:** credit score, account balance, estimated salary
+- **Relationship with the bank:** account tenure, number of products contracted, activity, accumulated points, credit card ownership, card type
+- **Demographic data:** age, gender, country
+- **Customer experience:** satisfaction score, complaint history
 
-### Impacto financeiro do churn
+### Financial Impact of Churn
 
-O custo de aquisição de novos clientes tende a ser significativamente maior do que o custo de retenção dos existentes. Em carteiras com volumes expressivos de clientes, mesmo taxas de churn moderadas resultam em:
+The cost of acquiring new customers tends to be significantly higher than the cost of retaining existing ones. In portfolios with substantial customer volumes, even moderate churn rates result in:
 
-- perda relevante de base ativa ao longo do ciclo anual
-- redução de receita recorrente proveniente de tarifas, operações de crédito e produtos complementares
-- esforço de recomposição via aquisição que, em geral, supera o investimento em ações preventivas de retenção
+- relevant loss of active base throughout the annual cycle
+- reduction in recurring revenue from fees, credit operations, and complementary products
+- effort to rebuild through acquisition that generally exceeds investment in preventive retention actions
+
 ---
 
-## 2. Visão geral técnica do dataset
+## 2. Technical Overview of the Dataset
 
-| Propriedade | Valor |
+| Property | Value |
 |---|---|
-| Total de linhas | 10.000 |
-| Total de colunas | 18 |
-| Memória | 1.68 MB |
-| Valores ausentes | **0** (0.0%) |
-| Linhas duplicadas | **0** |
-| IDs únicos de clientes | 10.000 |
+| Total rows | 10,000 |
+| Total columns | 18 |
+| Memory | 1.68 MB |
+| Missing values | **0** (0.0%) |
+| Duplicate rows | **0** |
+| Unique customer IDs | 10,000 |
 
-### Schema de colunas
+### Column Schema
 
-| Coluna | Tipo | Categoria | Descrição |
+| Column | Type | Category | Description |
 |---|---|---|---|
-| `RowNumber` | int64 | Identificador | Índice sequencial|
-| `CustomerId` | int64 | Identificador | ID único do cliente |
-| `Surname` | string | Identificador | Sobrenome |
-| `CreditScore` | int64 | Numérica contínua | Score de crédito (350–850) |
-| `Geography` | string | Categórica nominal | País: France, Germany, Spain |
-| `Gender` | string | Categórica nominal | Gênero: Male, Female |
-| `Age` | int64 | Numérica contínua | Idade (18–92 anos) |
-| `Tenure` | int64 | Numérica discreta | Anos como cliente (0–10) |
-| `Balance` | float64 | Numérica contínua | Saldo na conta (0–250.898) |
-| `NumOfProducts` | int64 | Numérica discreta | Produtos contratados (1–4) |
-| `HasCrCard` | int64 | Binária | Possui cartão de crédito 1=Sim, 0=Não |
-| `IsActiveMember` | int64 | Binária | Membro ativo 1=Sim, 0=Não |
-| `EstimatedSalary` | float64 | Numérica contínua | Salário estimado (11–199.992) |
-| `Exited` | int64 | **Alvo (Target)** | Saiu do banco: 1=Sim, 0=Não |
-| `Complain` | int64 | Binária | Registrou reclamação 1=Sim, 0=Não |
-| `Satisfaction Score` | int64 | Ordinal | Satisfação: 1 (péssimo) a 5 (ótimo) |
-| `Card Type` | string | Categórica nominal | Tipo de cartão: DIAMOND, GOLD, SILVER, PLATINUM |
-| `Point Earned` | int64 | Numérica discreta | Pontos de fidelidade acumulados (119-1.000) |
+| `RowNumber` | int64 | Identifier | Sequential index |
+| `CustomerId` | int64 | Identifier | Unique customer ID |
+| `Surname` | string | Identifier | Last name |
+| `CreditScore` | int64 | Continuous numeric | Credit score (350–850) |
+| `Geography` | string | Nominal categorical | Country: France, Germany, Spain |
+| `Gender` | string | Nominal categorical | Gender: Male, Female |
+| `Age` | int64 | Continuous numeric | Age (18–92 years) |
+| `Tenure` | int64 | Discrete numeric | Years as customer (0–10) |
+| `Balance` | float64 | Continuous numeric | Account balance (0–250,898) |
+| `NumOfProducts` | int64 | Discrete numeric | Products contracted (1–4) |
+| `HasCrCard` | int64 | Binary | Has credit card: 1=Yes, 0=No |
+| `IsActiveMember` | int64 | Binary | Active member: 1=Yes, 0=No |
+| `EstimatedSalary` | float64 | Continuous numeric | Estimated salary (11–199,992) |
+| `Exited` | int64 | **Target** | Left the bank: 1=Yes, 0=No |
+| `Complain` | int64 | Binary | Registered complaint: 1=Yes, 0=No |
+| `Satisfaction Score` | int64 | Ordinal | Satisfaction: 1 (very poor) to 5 (excellent) |
+| `Card Type` | string | Nominal categorical | Card type: DIAMOND, GOLD, SILVER, PLATINUM |
+| `Point Earned` | int64 | Discrete numeric | Loyalty points accumulated (119-1,000) |
 
 ---
 
-## 3. Qualidade dos dados
+## 3. Data Quality
 
-### Valores ausentes
+### Missing Values
 
-**Resultado:** Nenhuma das 180.000 células contém valor nulo.
-
-```
-Células totais    : 180.000
-Células ausentes  : 0  (0.0000%)
-Colunas afetadas  : nenhuma
-```
-
-**Implicação para MLOps:** Nenhuma estratégia de imputação é necessária para este dataset. No entanto, em produção (dados reais do banco), é provável que surjam nulos — especialmente em `Balance` (clientes novos sem histórico) e `CreditScore` (clientes sem análise de crédito formal). Estratégias preventivas são detalhadas na [seção 8](#8-recomendações-para-o-modelo-de-machine-learning).
-
-### Duplicatas
+**Result:** None of the 180,000 cells contain null values.
 
 ```
-Duplicatas exatas         : 0
-Duplicatas por features   : 0  
+Total cells      : 180,000
+Missing cells    : 0  (0.0000%)
+Affected columns : none
 ```
 
-Cada linha representa um cliente único e distinto.
+**Implication for MLOps:** No imputation strategy is necessary for this dataset. However, in production (real bank data), nulls are likely to emerge — especially in `Balance` (new customers without history) and `CreditScore` (customers without formal credit analysis). Preventive strategies are detailed in [section 8](#8-recommendations-for-the-machine-learning-model).
 
-### Distribuições e outliers
+### Duplicates
 
-| Coluna | Outliers IQR | Outliers Z>3 | Observação |
+```
+Exact duplicates    : 0
+Feature duplicates  : 0  
+```
+
+Each row represents a unique and distinct customer.
+
+### Distributions and Outliers
+
+| Column | IQR Outliers | Z>3 Outliers | Observation |
 |---|---|---|---|
-| `CreditScore` | 15 (0.15%) | 8 (0.08%) | Negligível |
-| `Age` | 359 (3.59%) | 133 (1.33%) | Clientes acima de 62 anos — dados válidos |
-| `Balance` | 0 (0.0%) | 0 (0.0%) | Bimodal: 36.17% dos clientes têm saldo zero |
-| `NumOfProducts` | 60 (0.6%) | 60 (0.6%) | 4 produtos = sinal de alerta |
-| `Tenure` | 0 (0.0%) | 0 (0.0%) | Distribuição uniforme
-| `EstimatedSalary` | 0 (0.0%) | 0 (0.0%) | Distribuição uniforme |
-| `Satisfaction Score` | 0 (0.0%) | 0 (0.0%) | Distribuição uniforme |
-| `Point Earned` | 0 (0.0%) | 0 (0.0%) | Distribuição uniforme |
+| `CreditScore` | 15 (0.15%) | 8 (0.08%) | Negligible |
+| `Age` | 359 (3.59%) | 133 (1.33%) | Customers over 62 years — valid data |
+| `Balance` | 0 (0.0%) | 0 (0.0%) | Bimodal: 36.17% of customers have zero balance |
+| `NumOfProducts` | 60 (0.6%) | 60 (0.6%) | 4 products = signal of caution |
+| `Tenure` | 0 (0.0%) | 0 (0.0%) | Uniform distribution |
+| `EstimatedSalary` | 0 (0.0%) | 0 (0.0%) | Uniform distribution |
+| `Satisfaction Score` | 0 (0.0%) | 0 (0.0%) | Uniform distribution |
+| `Point Earned` | 0 (0.0%) | 0 (0.0%) | Uniform distribution |
 
-Os outliers identificados foram mantidos por representarem comportamentos reais de negócio. Os 15 casos extremos de `CreditScore` são estatisticamente insignificantes (0,15%) e não distorcem a distribuição. O `Balance` não possui outliers, mas apresenta distribuição bimodal — 36,17% dos clientes têm saldo zero, refletindo dois perfis distintos de uso bancário que não devem ser tratados como anomalia. Os 359 clientes idosos sinalizados em `Age` são válidos demograficamente; removê-los introduziria viés e eliminaria um segmento relevante para a previsão de churn. Os 60 clientes com 4 produtos em `NumOfProducts`, embora raros (0,6%), carregam potencial preditivo alto e foram mantidos. A performance do modelo sobre esses subgrupos será verificada na etapa de avaliação para detectar eventuais disparidades preditivas.
-
----
-
-## 4. Distribuição da variável alvo — Churn
-
-```
-Total de clientes   : 10.000
-Clientes que saíram : 2.038  (20.38%)
-Clientes retidos    : 7.962  (79.62%)
-Razão de desequilíbrio: 3.91:1  (retidos:saídos)
-```
-
-### O problema de classe desbalanceada
-
-A distribuição 80/20 representa um **desequilíbrio moderado** — não é severo, mas é significativo o suficiente para distorcer modelos.
-
-**Sem tratamento do desbalanceamento**, um modelo que classifica todos os clientes como "retidos" atingiria 79.62% de acurácia — resultado numericamente elevado, mas com valor operacional nulo, pois não identifica nenhum caso de churn.
-
-**Por que isso importa para o negócio:** Em retenção de clientes, o custo de um falso negativo (não identificar quem vai sair e perder o cliente) é muito maior do que o custo de um falso positivo. A estratégia do modelo deve refletir esse custo assimétrico.
+Identified outliers were retained as they represent real business behaviors. The 15 extreme cases of `CreditScore` are statistically insignificant (0.15%) and do not distort the distribution. `Balance` has no outliers but presents a bimodal distribution — 36.17% of customers have zero balance, reflecting two distinct profiles of banking usage that should not be treated as anomalies. The 359 elderly customers flagged in `Age` are demographically valid; removing them would introduce bias and eliminate a relevant segment for churn prediction. The 60 customers with 4 products in `NumOfProducts`, though rare (0.6%), carry high predictive potential and were retained. Model performance on these subgroups will be verified in the evaluation stage to detect any predictive disparities.
 
 ---
 
-## 5. Análise das variáveis
+## 4. Distribution of the Target Variable — Churn
 
-### Variáveis numéricas — estatísticas completas
+```
+Total customers      : 10,000
+Customers who left   : 2,038  (20.38%)
+Customers retained   : 7,962  (79.62%)
+Imbalance ratio      : 3.91:1  (retained:exited)
+```
 
-| Variável | Mín | Máx | Média | Mediana | Std | Skewness | Outliers IQR |
+### The Class Imbalance Problem
+
+The 80/20 distribution represents a **moderate imbalance** — not severe, but significant enough to distort models.
+
+**Without imbalance treatment**, a model that classifies all customers as "retained" would achieve 79.62% accuracy — a numerically high result, but with zero operational value, as it identifies no churn cases.
+
+**Why this matters to the business:** In customer retention, the cost of a false negative (failing to identify who will leave and losing the customer) is much higher than the cost of a false positive. The model strategy should reflect this asymmetric cost.
+
+---
+
+## 5. Analysis of Variables
+
+### Numeric Variables — Complete Statistics
+
+| Variable | Min | Max | Mean | Median | Std | Skewness | IQR Outliers |
 |---|---|---|---|---|---|---|---|
-| `CreditScore` | 350 | 850 | 650.5 | 652.0 | 96.7 | -0.07 (simétrico) | 0.15% |
-| `Age` | 18 | 92 | 38.9 | 37.0 | 10.5 | +1.01 (assimétrico direita) | 3.59% |
-| `Tenure` | 0 | 10 | 5.01 | 5.0 | 2.89 | ~0 (uniforme) | 0.0% |
-| `Balance` | 0 | 250.898 | 76.486 | 97.199 | 62.397 | -0.14 (bimodal) | 0.0% |
-| `NumOfProducts` | 1 | 4 | 1.53 | 1.0 | 0.58 | +0.75 (assimétrico) | 0.6% |
-| `EstimatedSalary` | 12 | 199.992 | 100.090 | 100.194 | 57.510 | ~0 (uniforme) | 0.0% |
-| `Satisfaction Score` | 1 | 5 | 3.01 | 3.0 | 1.41 | ~0 (uniforme) | 0.0% |
-| `Point Earned` | 119 | 1.000 | 606.5 | 605.0 | 225.9 | ~0 (uniforme) | 0.0% |
+| `CreditScore` | 350 | 850 | 650.5 | 652.0 | 96.7 | -0.07 (symmetric) | 0.15% |
+| `Age` | 18 | 92 | 38.9 | 37.0 | 10.5 | +1.01 (right-skewed) | 3.59% |
+| `Tenure` | 0 | 10 | 5.01 | 5.0 | 2.89 | ~0 (uniform) | 0.0% |
+| `Balance` | 0 | 250,898 | 76,486 | 97,199 | 62,397 | -0.14 (bimodal) | 0.0% |
+| `NumOfProducts` | 1 | 4 | 1.53 | 1.0 | 0.58 | +0.75 (skewed) | 0.6% |
+| `EstimatedSalary` | 12 | 199,992 | 100,090 | 100,194 | 57,510 | ~0 (uniform) | 0.0% |
+| `Satisfaction Score` | 1 | 5 | 3.01 | 3.0 | 1.41 | ~0 (uniform) | 0.0% |
+| `Point Earned` | 119 | 1,000 | 606.5 | 605.0 | 225.9 | ~0 (uniform) | 0.0% |
 
-**Observações técnicas:**
-- **`CreditScore`:** Distribuição quase simétrica, mas não possui distribuição normal (p < 0.05 nos dois testes).
-- **`Age`:** Distribuição fortemente assimétrica à direita. A maioria dos clientes é jovem-adulta (mediana 37 anos), mas há cauda longa de clientes idosos até 92 anos.
-- **`Balance`:** Variável bimodal crítica. 36.17% dos clientes têm saldo zero — isso representa clientes que mantêm a conta aberta mas não a usam. Os demais (63.83%) têm saldo médio de ~120 mil.
-- **`Tenure`:** Completamente uniforme entre 0 e 10 anos. Nenhum poder preditivo linear com o churn.
-- **`EstimatedSalary`:** Uniformemente distribuído entre ~0 e ~200k. Provavelmente gerado sinteticamente neste dataset.
+**Technical observations:**
+- **`CreditScore`:** Nearly symmetric distribution, but does not follow normal distribution (p < 0.05 in both tests).
+- **`Age`:** Distribution strongly right-skewed. Most customers are young-adult (median 37 years), but with a long tail extending to elderly customers up to 92 years.
+- **`Balance`:** Critical bimodal variable. 36.17% of customers have zero balance — this represents customers who keep the account open but do not use it. The remaining (63.83%) have average balance of ~120,000.
+- **`Tenure`:** Completely uniform between 0 and 10 years. No linear predictive power with churn.
+- **`EstimatedSalary`:** Uniformly distributed between ~0 and ~200k. Likely synthetically generated in this dataset.
 
-### Variáveis categóricas — distribuição
+### Categorical Variables — Distribution
 
 **Geography:**
-| País | Clientes | % do total | Churn Rate |
+| Country | Customers | % of Total | Churn Rate |
 |---|---|---|---|
-| France | 5.014 | 50.14% | 16.2% |
-| Germany | 2.509 | 25.09% | **32.4%** |
-| Spain | 2.477 | 24.77% | 16.7% |
+| France | 5,014 | 50.14% | 16.2% |
+| Germany | 2,509 | 25.09% | **32.4%** |
+| Spain | 2,477 | 24.77% | 16.7% |
 
 **Gender:**
-| Gênero | Clientes | % do total | Churn Rate |
+| Gender | Customers | % of Total | Churn Rate |
 |---|---|---|---|
-| Male | 5.457 | 54.57% | 16.5% |
-| Female | 4.543 | 45.43% | **25.1%** |
+| Male | 5,457 | 54.57% | 16.5% |
+| Female | 4,543 | 45.43% | **25.1%** |
 
 **Card Type:**
-| Tipo | Clientes | % do total | Churn Rate |
+| Type | Customers | % of Total | Churn Rate |
 |---|---|---|---|
-| DIAMOND | 2.507 | 25.07% | 21.8% |
-| GOLD | 2.502 | 25.02% | 19.3% |
-| PLATINUM | 2.495 | 24.95% | 20.4% |
-| SILVER | 2.496 | 24.96% | 20.1% |
+| DIAMOND | 2,507 | 25.07% | 21.8% |
+| GOLD | 2,502 | 25.02% | 19.3% |
+| PLATINUM | 2,495 | 24.95% | 20.4% |
+| SILVER | 2,496 | 24.96% | 20.1% |
 
-> O tipo de cartão está distribuído de forma perfeitamente balanceada (≈25% cada) e **não tem associação significativa com o churn** (χ² p=0.168, Cramér's V=0.02).
-
----
-
-## 6. Principais achados e implicações estratégicas
-
-Os dados revelam padrões de comportamento com relevância direta para a estratégia de retenção. Cada achado é apresentado com o embasamento estatístico e a implicação operacional correspondente.
+> Card type is distributed perfectly balanced (≈25% each) and **has no significant association with churn** (χ² p=0.168, Cramér's V=0.02).
 
 ---
 
-### Achado 1: Reclamação é o indicador mais fortemente associado à saída
+## 6. Key Findings and Strategic Implications
 
-**Correlação de Pearson entre `Complain` e `Exited` = 0.9957**
+The data reveals behavior patterns with direct relevance to the retention strategy. Each finding is presented with statistical backing and corresponding operational implication.
 
-| Registrou reclamação? | Total | Saíram | Taxa de churn |
+---
+
+### Finding 1: Complaint is the Strongest Indicator of Departure
+
+**Pearson correlation between `Complain` and `Exited` = 0.9957**
+
+| Registered complaint? | Total | Left | Churn Rate |
 |---|---|---|---|
-| Não | 7.956 | 4 | **0.05%** |
-| Sim | 2.044 | 2.034 | **99.5%** |
+| No | 7,956 | 4 | **0.05%** |
+| Yes | 2,044 | 2,034 | **99.5%** |
 
-A correlação é virtualmente perfeita: clientes que registraram reclamação apresentaram saída em 99.5% dos casos. O lado inverso é igualmente expressivo — entre os clientes sem reclamação, apenas 0.05% encerrou o relacionamento.
+The correlation is virtually perfect: customers who registered a complaint left in 99.5% of cases. The inverse is equally striking — among customers without complaints, only 0.05% terminated the relationship.
 
-**Implicação estratégica:** Cada reclamação não resolvida se converte, na quase totalidade dos casos, em um cliente perdido. O investimento em capacidade de resolução de reclamações representa diretamente uma alavanca de retenção.
+**Strategic implication:** Every unresolved complaint converts, in virtually all cases, into a lost customer. Investment in complaint resolution capacity represents a direct lever for retention.
 
-**Alerta para o modelo preditivo:** A força desta correlação levanta uma questão de integridade dos dados. Ver [seção 7](#7-alerta-crítico-risco-de-data-leakage).
-
----
-
-### Achado 2: Clientes mais velhos apresentam maior propensão à saída
-
-**Idade média dos clientes que saíram: 44.8 anos vs. 37.4 anos entre os que permaneceram. Cohen's d = 0.747 (efeito médio-grande).**
-
-A diferença de ~7 anos entre os grupos é estatisticamente robusta (p ≈ 0, Mann-Whitney U). Isso sugere que:
-
-- Clientes mais velhos podem ter relacionamentos mais longos com outros bancos e maior facilidade para migrar
-- O banco pode não estar oferecendo produtos adequados para o perfil de cliente maduro (previdência, gestão de patrimônio, etc.)
-- Campanhas de retenção devem priorizar a faixa etária 40–60 anos
+**Alert for the predictive model:** The strength of this correlation raises a data integrity question. See [section 7](#7-critical-alert-risk-of-data-leakage).
 
 ---
 
-### Achado 3: A operação alemã concentra o dobro do churn das demais praças
+### Finding 2: Older Customers Show Higher Propensity for Departure
 
-**Alemanha: 32.4% de churn vs. 16.2% na França e 16.7% na Espanha. Associação moderada (Cramér's V = 0.17, p < 0.0001).**
+**Average age of customers who left: 44.8 years vs. 37.4 years among those retained. Cohen's d = 0.747 (medium-large effect).**
 
-Um cliente alemão apresenta aproximadamente o dobro da probabilidade de saída em relação a clientes franceses ou espanhóis. Hipóteses que merecem investigação pelo time de negócio:
-- O banco pode ter uma operação menos competitiva na Alemanha
-- Diferenças culturais no relacionamento com banco (alemães tendem a ser mais exigentes com qualidade de serviço)
-- Concorrência bancária mais intensa no mercado alemão
-- Problemas localizados de atendimento ou produto
+The difference of ~7 years between groups is statistically robust (p ≈ 0, Mann-Whitney U). This suggests that:
 
-**O maior efeito estrutural do dataset: clientes alemães têm saldo médio quase o dobro dos demais.**
+- Older customers may have longer-standing relationships with other banks and greater ease migrating
+- The bank may not be offering products suitable for mature customer profiles (retirement planning, wealth management, etc.)
+- Retention campaigns should prioritize the 40–60 age range
 
-| País | Saldo médio |
+---
+
+### Finding 3: German Operations Concentrate Double the Churn of Other Markets
+
+**Germany: 32.4% churn vs. 16.2% in France and 16.7% in Spain. Moderate association (Cramér's V = 0.17, p < 0.0001).**
+
+A German customer has approximately double the probability of departure relative to French or Spanish customers. Hypotheses warranting investigation by the business team:
+- The bank may have a less competitive operation in Germany
+- Cultural differences in banking relationships (Germans tend to demand higher service quality)
+- More intense banking competition in the German market
+- Localized service or product issues
+
+**The largest structural effect in the dataset: German customers have average balance almost double the others.**
+
+| Country | Average Balance |
 |---|---|
-| France | €62.093 |
-| Germany | **€119.730** |
-| Spain | €61.818 |
+| France | €62,093 |
+| Germany | **€119,730** |
+| Spain | €61,818 |
 
-A diferença de saldo entre a Alemanha e as demais praças é a **maior associação numérica observada em toda a análise** (ANOVA F=958, p≈0, eta²=0.16 — efeito grande). Clientes alemães são, em média, os mais ricos do portfolio — e, portanto, os alvos mais atrativos para a concorrência bancária. Isso oferece uma explicação estrutural para o churn elevado: não é um problema de qualidade de serviço isolado, é um efeito de mercado.
+The balance difference between Germany and other markets is the **largest numerical association observed in the entire analysis** (ANOVA F=958, p≈0, eta²=0.16 — large effect). German customers are on average the wealthiest in the portfolio — and therefore the most attractive targets for competitor banks. This provides a structural explanation for elevated churn: not an isolated service quality issue, but a market effect.
 
-**O efeito da Alemanha é independente do score de crédito.**
+**The Germany effect is independent of credit score.**
 
-Ao segmentar o churn por quartil de `CreditScore` dentro de cada país, o padrão se mantém estável em todos os níveis:
+When segmenting churn by credit score quartile within each country, the pattern remains stable across all levels:
 
-| Quartil de CreditScore | France | Germany | Spain |
+| Credit Score Quartile | France | Germany | Spain |
 |---|---|---|---|
-| Q1 (score mais baixo) | 17.3% | **35.6%** | 17.6% |
-| Q2 | 17.5% | **32.0%** | 16.6% |
+| Q1 (lowest score) | 17.3% | **35.6%** | 17.6% |
+| Q2 | 17.5% | **32.0% | 16.6% |
 | Q3 | 15.1% | **28.1%** | 15.4% |
-| Q4 (score mais alto) | 14.8% | **33.7%** | 17.1% |
+| Q4 (highest score) | 14.8% | **33.7%** | 17.1% |
 
-Independentemente da qualidade de crédito do cliente, a probabilidade de churn na Alemanha é sempre o dobro das demais praças. Isso descarta a hipótese de que o problema alemão é causado por inadimplência ou perfil de risco — o fenômeno é sistêmico na operação local.
+Regardless of customer credit quality, the probability of churn in Germany is always double the other markets. This rules out the hypothesis that the German problem is caused by defaults or risk profile — the phenomenon is systemic to local operations.
 
-Adicionalmente, a análise de chi-squared mostra que clientes alemães registram proporcionalmente mais reclamações (Cramér's V = 0.175, p < 0.0001) — o mesmo coeficiente de associação que a própria variável `Geography` tem com `Exited`.
-
----
-
-### Achado 4: Clientes do sexo feminino apresentam churn significativamente maior
-
-**Mulheres: 25.1% de churn vs. 16.5% entre homens (Cramér's V = 0.11, p < 0.0001).**
-
-Clientes do sexo feminino apresentam 52% mais probabilidade de saída em relação ao sexo masculino. Esse diferencial pode indicar desalinhamento entre o portfólio de produtos e a comunicação do banco com o perfil feminino, ou expectativas específicas de serviço que não estão sendo atendidas adequadamente.
+Additionally, chi-squared analysis shows that German customers proportionally file more complaints (Cramér's V = 0.175, p < 0.0001) — the same association coefficient that the `Geography` variable itself has with `Exited`.
 
 ---
 
-### Achado 5: Concentração de produtos acima de 2 é fortemente associada à saída
+### Finding 4: Female Customers Show Significantly Higher Churn
 
-| Nº de produtos | Total | Saíram | Taxa de churn |
+**Women: 25.1% churn vs. 16.5% among men (Cramér's V = 0.11, p < 0.0001).**
+
+Female customers show 52% higher probability of departure relative to male customers. This differential may indicate misalignment between the product portfolio and bank communications with the female profile, or unmet specific service expectations.
+
+---
+
+### Finding 5: Product Concentration Above 2 is Strongly Associated with Departure
+
+| No. of Products | Total | Left | Churn Rate |
 |---|---|---|---|
-| 1 | 5.084 | 1.409 | 27.7% |
-| 2 | 4.590 | 349 | **7.6%** |
+| 1 | 5,084 | 1,409 | 27.7% |
+| 2 | 4,590 | 349 | **7.6%** |
 | 3 | 266 | 220 | **82.7%** |
 | 4 | 60 | 60 | **100%** |
 
-O padrão é não-linear: o ponto de menor churn é exatamente 2 produtos. A partir de 3 produtos, a taxa de saída eleva-se dramaticamente — atingindo 100% para 4 produtos.
+The pattern is non-linear: the lowest churn point is exactly 2 products. Beyond 3 products, the exit rate rises dramatically — reaching 100% for 4 products.
 
-- **1 produto:** Vínculo frágil com o banco — cliente susceptível a propostas da concorrência
-- **2 produtos:** Ponto de maior engajamento e menor churn
-- **3–4 produtos:** Indicativo de saturação — possível resultado de estratégias agressivas de cross-sell que geraram insatisfação
+- **1 product:** Fragile bond with the bank — customer susceptible to competitor offers
+- **2 products:** Peak engagement point and lowest churn
+- **3–4 products:** Signal of saturation — possible result of aggressive cross-sell strategies that generated dissatisfaction
 
-**Implicação estratégica:** Revisão das metas de cross-sell para clientes que já operam com 2 produtos. O foco de expansão deve recair sobre a transição de 1 para 2 produtos — o intervalo de maior retorno em retenção.
-
----
-
-### Achado 6: Inatividade como precursor de saída
-
-**Membros inativos: 26.9% de churn vs. 14.3% entre membros ativos. Pearson r = -0.156.**
-
-Clientes sem engajamento recente com os serviços do banco — sem transações, acesso ao aplicativo ou uso de cartão — apresentam quase o dobro da taxa de saída em relação a clientes ativos. A inatividade funciona como um sinal precoce de desengajamento, antecedendo a decisão de encerramento da conta.
-
-**Implicação operacional:** Monitorar quedas de atividade e acionar campanhas de reativação personalizadas antes que o cliente tome a decisão de saída.
+**Strategic implication:** Review cross-sell targets for customers already operating with 2 products. Expansion focus should fall on the 1-to-2 product transition — the interval of highest retention return.
 
 ---
 
-### Achado 7: Clientes de maior saldo apresentam maior propensão à saída
+### Finding 6: Inactivity as a Precursor to Departure
 
-**Saldo médio dos que saíram: €91.109 vs. €72.743 entre os que permaneceram (+25%). Cohen's d = 0.30 (efeito pequeno).**
+**Inactive members: 26.9% churn vs. 14.3% among active members. Pearson r = -0.156.**
 
-O padrão é contra-intuitivo mas coerente: clientes com saldo elevado são exatamente os mais disputados pela concorrência, recebendo propostas ativas de migração. Adicionalmente, 36.17% dos clientes possuem saldo zero — perfil de baixo engajamento financeiro que, paradoxalmente, apresenta menor taxa de saída.
+Customers without recent engagement with bank services — no transactions, app access, or card usage — show nearly double the exit rate relative to active customers. Inactivity functions as an early signal of disengagement, preceding the departure decision.
+
+**Operational implication:** Monitor activity declines and trigger personalized reactivation campaigns before the customer decides to leave.
 
 ---
 
-### Achado 8: O dataset não possui segmentos naturais nítidos — a divisão é contínua, não discreta
+### Finding 7: Higher-Balance Customers Show Greater Propensity for Departure
 
-A análise de clustering KMeans identificou **k=2 como partição ótima**, mas com **silhouette score = 0.13** — valor muito próximo de zero, indicando que os grupos têm fronteiras difusas e grande sobreposição. O dataset não apresenta clusters bem definidos; a variação dos clientes é mais contínua do que segmentada.
+**Average balance of those who left: €91,109 vs. €72,743 among those retained (+25%). Cohen's d = 0.30 (small effect).**
 
-Os dois segmentos identificados são essencialmente uma divisão pelo saldo em conta:
+The pattern is counter-intuitive but coherent: customers with high balances are precisely those most targeted by competitors, receiving active migration offers. Additionally, 36.17% of customers have zero balance — a profile of low financial engagement that paradoxically shows lower exit rates.
 
-| Segmento | Clientes | Saldo médio | Produtos (média) | Churn |
+---
+
+### Finding 8: Dataset Has No Clear Natural Segments — Division is Continuous, Not Discrete
+
+KMeans clustering analysis identified **k=2 as optimal partition**, but with **silhouette score = 0.13** — a value very close to zero, indicating groups have fuzzy boundaries and substantial overlap. The dataset presents no well-defined clusters; customer variation is more continuous than segmented.
+
+The two identified segments are essentially a division by account balance:
+
+| Segment | Customers | Average Balance | Products (avg) | Churn |
 |---|---|---|---|---|
-| Cluster 0 — saldo baixo | 4.207 | €12.371 | 1,87 | 17,5% |
-| Cluster 1 — saldo alto | 5.793 | €123.047 | 1,28 | 22,5% |
+| Cluster 0 — low balance | 4,207 | €12,371 | 1.87 | 17.5% |
+| Cluster 1 — high balance | 5,793 | €123,047 | 1.28 | 22.5% |
 
-O cluster de saldo alto apresenta churn superior (22.5% vs 17.5%), em linha com o Achado 7. Clientes com maior patrimônio no banco e poucos produtos contratados são os que mais saem — reforçando que o engajamento via múltiplos produtos é um fator protetor, mas somente até 2 produtos.
+The high-balance cluster shows superior churn (22.5% vs 17.5%), aligned with Finding 7. Customers with greater bank wealth and few contracted products are the ones departing most — reinforcing that product engagement is a protective factor, but only up to 2 products.
 
-**Implicação para o modelo:** Abordagens baseadas em segmentos predefinidos (ex: modelos separados por cluster) não são recomendadas para este dataset. A baixa separabilidade dos clusters indica que um modelo global, treinado sobre toda a base com features que capturem o contínuo de saldo e engajamento, terá melhor desempenho do que modelos especializados por segmento.
+**Implication for the model:** Approaches based on predefined segments (e.g., separate models by cluster) are not recommended for this dataset. Low cluster separability indicates that a global model trained on the entire base with features capturing the balance and engagement continuum will outperform specialized segment models.
 
 ---
 
-### Variáveis sem poder preditivo — e o que isso revela
+### Variables Without Predictive Power — and What This Reveals
 
-Os testes estatísticos indicam ausência de associação significativa entre churn e as seguintes variáveis:
+Statistical tests indicate absence of significant association between churn and the following variables:
 
-| Variável | Pearson r | p-valor | Conclusão |
+| Variable | Pearson r | p-value | Conclusion |
 |---|---|---|---|
-| `EstimatedSalary` | +0.012 | 0.211 | Sem associação significativa |
-| `Tenure` | -0.014 | 0.172 | Sem associação significativa |
-| `Satisfaction Score` | -0.006 | 0.559 | Sem associação significativa |
-| `Point Earned` | -0.005 | 0.644 | Sem associação significativa |
-| `HasCrCard` | -0.007 | 0.485 | Sem associação significativa |
-| `Card Type` | χ² p=0.168 | — | Sem associação significativa |
+| `EstimatedSalary` | +0.012 | 0.211 | No significant association |
+| `Tenure` | -0.014 | 0.172 | No significant association |
+| `Satisfaction Score` | -0.006 | 0.559 | No significant association |
+| `Point Earned` | -0.005 | 0.644 | No significant association |
+| `HasCrCard` | -0.007 | 0.485 | No significant association |
+| `Card Type` | χ² p=0.168 | — | No significant association |
 
-**O resultado da nota de satisfação merece atenção específica.** A ausência de correlação entre `Satisfaction Score` e `Exited` é um sinal relevante de gestão. Possíveis interpretações:
-- Os clientes respondem pesquisas de satisfação sem sinceridade
-- A pesquisa de satisfação está sendo aplicada no momento errado da jornada
-- Os clientes decidem sair por razões racionais (produtos, preço, concorrência) sem expressar insatisfação explícita
+**The satisfaction score result merits specific attention.** Absence of correlation between `Satisfaction Score` and `Exited` signals something relevant about management. Possible interpretations:
+- Customers respond satisfaction surveys insincerely
+- The satisfaction survey is applied at the wrong journey moment
+- Customers decide to leave for rational reasons (products, price, competition) without expressing explicit dissatisfaction
 
 ---
 
-## 7. Alerta Crítico: Risco de Data Leakage
+## 7. Critical Alert: Risk of Data Leakage
 
-### O problema com a variável `Complain`
+### The Problem with the `Complain` Variable
 
-A correlação entre `Complain` e `Exited` é de **0.9957** — uma magnitude que dificilmente ocorre em dados reais sem que haja **data leakage**: o uso inadvertido de informação futura no treinamento do modelo.
+The correlation between `Complain` and `Exited` is **0.9957** — a magnitude that rarely occurs in real data without **data leakage**: the inadvertent use of future information in model training.
 
-Data leakage ocorre quando uma variável preditora contém informação que, na prática, só estaria disponível **após** o evento que se deseja prever — tornando o modelo artificialmente preciso em treino, mas completamente ineficaz em produção.
+Data leakage occurs when a predictor variable contains information that, in practice, would only be available **after** the event being predicted — making the model artificially accurate in training, but completely ineffective in production.
 
-**O cenário problemático:**
+**The problematic scenario:**
 ```
-Sem leakage (correto):
-  Timeline: [Dados históricos] → [PREDIÇÃO: vai sair?] → [Evento: sai ou fica]
+Without leakage (correct):
+  Timeline: [Historical Data] → [PREDICTION: will leave?] → [Event: leaves or stays]
 
-Com leakage (errado):
-  Timeline: [Dados históricos + "Reclamou?"] → [PREDIÇÃO] 
-  Problema: a reclamação pode ter sido registrada APÓS a decisão de sair
+With leakage (wrong):
+  Timeline: [Historical Data + "Complained?"] → [PREDICTION] 
+  Problem: the complaint may have been registered AFTER departure decision began
 ```
 
-Se a reclamação for registrada **após** o processo de churn ter iniciado, o modelo aprenderia a prever um evento já ocorrido, não um evento futuro. Em produção, a variável simplesmente não estaria disponível no momento da predição.
+If the complaint is registered **after** the churn process has commenced, the model would learn to predict an already-occurred event, not a future event. In production, the variable simply would not be available at prediction time.
 
-### Cenários possíveis
+### Possible Scenarios
 
-| Cenário | `Complain` deve ser usada? |
+| Scenario | Should `Complain` be used? |
 |---|---|
-| A reclamação precede a saída em semanas/meses | Sim — é um sinal preditivo legítimo |
-| A reclamação é registrada no mesmo momento da saída | Não — é data leakage |
-| A reclamação é um campo preenchido pela equipe após confirmação de saída | Não — é definitivamente leakage |
+| Complaint precedes departure by weeks/months | Yes — is a legitimate predictive signal |
+| Complaint registered at same time as departure | No — is data leakage |
+| Complaint is a field filled by staff after departure confirmation | No — is definitely leakage |
 
-### Recomendação
+### Recommendation
 
-**Antes de usar `Complain` no modelo**, validar com a equipe de dados do banco:
-1. Qual é o timestamp de quando uma reclamação é registrada?
-2. Qual é o timestamp de quando o churn é registrado?
-3. Há gap temporal entre os dois eventos?
+**Before using `Complain` in the model**, validate with the bank's data team:
+1. What is the timestamp for when a complaint is registered?
+2. What is the timestamp for when churn is registered?
+3. Is there a time gap between the two events?
 
-**Para fins de experimentação e benchmark:**
-- Treinar **dois modelos**: um com `Complain` (upper bound) e um sem `Complain` (modelo real)
-- O modelo sem `Complain` é o que deve ir para produção
+**For experimentation and benchmarking purposes:**
+- Train **two models**: one with `Complain` (upper bound) and one without `Complain` (real model)
+- The model without `Complain` is the one that should go to production
 
 ---
 
-## 8. Recomendações para o Modelo de Machine Learning
+## 8. Recommendations for the Machine Learning Model
 
-### 8.1 Pré-processamento de features
+### 8.1 Feature Pre-processing
 
-#### Colunas a descartar
+#### Columns to Drop
 ```python
 COLS_TO_DROP = ["RowNumber", "CustomerId", "Surname"]
-# Identificadores sem valor preditivo
+# Identifiers with no predictive value
 ```
 
-#### Encoding de variáveis categóricas
+#### Encoding Categorical Variables
 
-| Variável | Técnica recomendada | Justificativa |
+| Variable | Recommended Technique | Justification |
 |---|---|---|
-| `Geography` | One-Hot Encoding | 3 categorias, sem ordem natural (France, Germany, Spain) |
-| `Gender` | Binary Encoding ou OHE | 2 categorias |
-| `Card Type` | One-Hot Encoding | 4 categorias sem ordem; efeito não significativo (pode ser descartada) |
+| `Geography` | One-Hot Encoding | 3 categories, no natural order (France, Germany, Spain) |
+| `Gender` | Binary Encoding or OHE | 2 categories |
+| `Card Type` | One-Hot Encoding | 4 categories without order; effect not significant (can be dropped) |
 
+#### Scaling Numeric Variables
 
-#### Escalonamento de variáveis numéricas
+**Necessary only for distance/gradient-based models** (Logistic Regression, SVM, KNN, neural networks). Decision trees and Random Forest are scale-invariant.
 
-**Necessário apenas para modelos baseados em distância/gradiente** (Logistic Regression, SVM, KNN, redes neurais). Árvores de decisão e Random Forest são invariantes a escala.
-
-| Variável | Técnica recomendada | Justificativa |
+| Variable | Recommended Technique | Justification |
 |---|---|---|
-| `CreditScore` | StandardScaler | Distribuição quase normal, sem outliers extremos |
-| `Age` | RobustScaler + log transform | Assimétrica (skew=1.01), outliers de idosos válidos |
-| `Balance` | RobustScaler | Bimodal com 36% de zeros — evitar StandardScaler |
-| `EstimatedSalary` | StandardScaler | Uniforme, sem outliers |
-| `Point Earned` | StandardScaler | Uniforme, sem outliers |
-| `Tenure` | Nenhum ou MinMaxScaler | Discreta uniforme 0–10 |
-| `NumOfProducts` | Nenhum (tratar como ordinal) | Relação não-linear com target |
-| `Satisfaction Score` | Nenhum (tratar como ordinal) | Escala 1–5 |
+| `CreditScore` | StandardScaler | Nearly normal distribution, no extreme outliers |
+| `Age` | RobustScaler + log transform | Skewed (skew=1.01), valid elderly outliers |
+| `Balance` | RobustScaler | Bimodal with 36% zeros — avoid StandardScaler |
+| `EstimatedSalary` | StandardScaler | Uniform, no outliers |
+| `Point Earned` | StandardScaler | Uniform, no outliers |
+| `Tenure` | None or MinMaxScaler | Discrete uniform 0–10 |
+| `NumOfProducts` | None (treat as ordinal) | Non-linear relationship with target |
+| `Satisfaction Score` | None (treat as ordinal) | 1–5 scale |
 
-#### Feature Engineering recomendado
+#### Recommended Feature Engineering
 
-Com base nos padrões identificados na EDA, as seguintes features derivadas podem melhorar o modelo:
+Based on patterns identified in the EDA, the following derived features may improve model performance:
 
 ```python
-# 1. Flag de saldo zero — padrão binário forte
+# 1. Zero balance flag — strong binary pattern
 df["HasZeroBalance"] = (df["Balance"] == 0).astype(int)
 
-# 2. Produto de age × is_active — combinação de sinais
+# 2. Product of age × is_active — combination of signals
 df["AgeInactivity"] = df["Age"] * (1 - df["IsActiveMember"])
 
-# 3. Flag de alto risco por produtos — relação não-linear
+# 3. High-risk products flag — non-linear relationship
 df["HighRiskProducts"] = (df["NumOfProducts"] >= 3).astype(int)
 
-# 4. Score de engajamento composto
+# 4. Composite engagement score
 df["EngagementScore"] = (
     df["IsActiveMember"] 
     + (df["NumOfProducts"] == 2).astype(int)
@@ -437,29 +437,29 @@ df["EngagementScore"] = (
     - (df["Balance"] == 0).astype(int)
 )
 
-# 5. Faixa etária (captura relação não-linear com churn)
+# 5. Age group (captures non-linear relationship with churn)
 df["AgeGroup"] = pd.cut(df["Age"], 
     bins=[0, 30, 40, 50, 60, 100], 
     labels=["<30", "30-40", "40-50", "50-60", "60+"]
 )
 
-# 6. Razão saldo / salário estimado (indicador de engajamento financeiro)
+# 6. Balance to estimated salary ratio (financial engagement indicator)
 df["BalanceSalaryRatio"] = df["Balance"] / (df["EstimatedSalary"] + 1)
 ```
 
-### 8.2 Tratamento do desbalanceamento de classes
+### 8.2 Class Imbalance Treatment
 
-O dataset tem razão 3.91:1 (retidos:churned). Estratégias recomendadas, em ordem de preferência:
+The dataset has a 3.91:1 ratio (retained:churned). Recommended strategies in order of preference:
 
-| Estratégia | Quando usar | Como |
+| Strategy | When to Use | How |
 |---|---|---|
-| **class_weight='balanced'** | Primeira tentativa — simples | Parâmetro nativo no sklearn |
-| **SMOTE** (oversampling) | Se class_weight não resolver | `imblearn.over_sampling.SMOTE` |
-| **scale_pos_weight** | Para XGBoost/LightGBM | `scale_pos_weight = 7962 / 2038 ≈ 3.91` |
-| **Threshold tuning** | Pós-treinamento | Ajustar threshold de 0.5 para ~0.3 |
+| **class_weight='balanced'** | First attempt — simple | Native parameter in sklearn |
+| **SMOTE** (oversampling) | If class_weight insufficient | `imblearn.over_sampling.SMOTE` |
+| **scale_pos_weight** | For XGBoost/LightGBM | `scale_pos_weight = 7962 / 2038 ≈ 3.91` |
+| **Threshold tuning** | Post-training | Adjust threshold from 0.5 to ~0.3 |
 
 ```python
-# XGBoost com class balancing
+# XGBoost with class balancing
 from xgboost import XGBClassifier
 model = XGBClassifier(scale_pos_weight=3.91, ...)
 
@@ -468,31 +468,31 @@ from sklearn.linear_model import LogisticRegression
 model = LogisticRegression(class_weight='balanced', ...)
 ```
 
-### 8.3 Estratégia para dados ausentes em produção
+### 8.3 Missing Data Strategy for Production
 
-Embora este dataset não tenha nulos, em produção recomenda-se:
+Although this dataset has no nulls, production deployment should account for:
 
-| Variável | Estratégia de imputação | Justificativa |
+| Variable | Imputation Strategy | Justification |
 |---|---|---|
-| `CreditScore` | Mediana por Geography | Score varia por região geográfica |
-| `Age` | Mediana geral (37 anos) | Distribuição assimétrica — mediana > média |
-| `Balance` | Zero | 36% dos clientes têm saldo zero — é um valor legítimo |
-| `EstimatedSalary` | Mediana geral (100.194) | Distribuição uniforme |
-| `NumOfProducts` | Moda (1) | Valor mais comum |
-| `Tenure` | Mediana (5 anos) | Distribuição uniforme |
-| Categóricas | Moda | Valor mais frequente |
+| `CreditScore` | Median by Geography | Score varies by geographic region |
+| `Age` | Median overall (37 years) | Skewed distribution — median > mean |
+| `Balance` | Zero | 36% of customers have zero balance — is legitimate value |
+| `EstimatedSalary` | Median overall (100,194) | Uniform distribution |
+| `NumOfProducts` | Mode (1) | Most common value |
+| `Tenure` | Median (5 years) | Uniform distribution |
+| Categorical | Mode | Most frequent value |
 
-### 8.4 Modelos recomendados
+### 8.4 Recommended Models
 
-#### Modelos a experimentar (em ordem de prioridade)
+#### Models to Experiment With (in priority order)
 
-**1. XGBoost / LightGBM (recomendação principal)**
+**1. XGBoost / LightGBM (primary recommendation)**
 ```
-Motivo: Melhor para dados tabulares com relações não-lineares
-        (a relação NumOfProducts × churn é altamente não-linear)
-        Robusto a features sem transformação
-        Suporta class_weight nativamente
-Configuração inicial:
+Reason: Best for tabular data with non-linear relationships
+        (NumOfProducts × churn relationship is highly non-linear)
+        Robust to features without transformation
+        Supports class_weight natively
+Initial configuration:
   - n_estimators: 300–500
   - max_depth: 4–6
   - learning_rate: 0.05–0.1
@@ -503,9 +503,9 @@ Configuração inicial:
 
 **2. Random Forest**
 ```
-Motivo: Interpretável, robusto a outliers, sem necessidade de escalonamento
-        Bom baseline antes de boosting
-Configuração inicial:
+Reason: Interpretable, robust to outliers, no scaling needed
+        Good baseline before boosting
+Initial configuration:
   - n_estimators: 200–500
   - max_depth: 8–15
   - class_weight: 'balanced'
@@ -514,129 +514,129 @@ Configuração inicial:
 
 **3. Logistic Regression (baseline)**
 ```
-Motivo: Interpretável, rápido, bom para entender importância de features
-        Útil para explicabilidade ao time de negócio
-Requer: escalonamento + encoding correto
-Configuração: class_weight='balanced', C=0.1–1.0
+Reason: Interpretable, fast, useful for understanding feature importance
+        Useful for business team explainability
+Requires: proper scaling + encoding
+Configuration: class_weight='balanced', C=0.1–1.0
 ```
 
 **4. CatBoost**
 ```
-Motivo: Lida nativamente com variáveis categóricas (sem OHE manual)
-        Excelente para Geography, Gender, Card Type
+Reason: Handles categorical variables natively (no manual OHE)
+        Excellent for Geography, Gender, Card Type
 ```
 
-#### Modelos a evitar ou usar com cuidado
-- **KNN:** Caro computacionalmente com 10k linhas; sensível a escala e features irrelevantes
-- **SVM:** Escalabilidade ruim para produção; difícil de calibrar probabilidades
-- **Naive Bayes:** Assume independência entre features — violada (NumOfProducts × Balance correlacionados)
+#### Models to Avoid or Use with Caution
+- **KNN:** Computationally expensive with 10k rows; sensitive to scale and irrelevant features
+- **SVM:** Poor scalability for production; difficult to calibrate probabilities
+- **Naive Bayes:** Assumes feature independence — violated (NumOfProducts × Balance correlated)
 
-### 8.5 Métricas de avaliação
+### 8.5 Evaluation Metrics
 
-> **Accuracy não é uma métrica adequada para dados desbalanceados.** Um modelo que classifica todos os clientes como "vai ficar" atingiria 79.62% de acurácia — resultado aparentemente satisfatório, mas com valor preditivo nulo para a classe de interesse.
+> **Accuracy is not an appropriate metric for imbalanced data.** A model classifying all customers as "will stay" would achieve 79.62% accuracy — apparently satisfactory, but with zero predictive value for the target class.
 
-#### Métricas primárias recomendadas
+#### Primary Recommended Metrics
 
-| Métrica | Por que usar | Meta inicial |
+| Metric | Why Use | Initial Target |
 |---|---|---|
-| **ROC-AUC** | Mede discriminação geral; independente de threshold | > 0.85 |
-| **F1-Score (classe churn)** | Balanceia precisão e recall para a classe minoritária | > 0.60 |
-| **Recall (classe churn)** | Minimiza falsos negativos — não perder clientes em risco | > 0.70 |
-| **Average Precision (PR-AUC)** | Melhor que ROC-AUC quando há desbalanceamento | > 0.60 |
+| **ROC-AUC** | Measures general discrimination; threshold-independent | > 0.85 |
+| **F1-Score (churn class)** | Balances precision and recall for minority class | > 0.60 |
+| **Recall (churn class)** | Minimizes false negatives — avoid missing at-risk customers | > 0.70 |
+| **Average Precision (PR-AUC)** | Better than ROC-AUC when imbalanced | > 0.60 |
 
-#### Métricas de negócio
+#### Business Metrics
 
 ```python
-# Custo estimado:
-CUSTO_FALSO_NEGATIVO  = 500  # perda de receita anual por cliente perdido não identificado
-CUSTO_FALSO_POSITIVO  = 20   # custo de campanha de retenção desnecessária
+# Estimated costs:
+COST_FALSE_NEGATIVE  = 500  # annual revenue loss per unidentified churned customer
+COST_FALSE_POSITIVE  = 20   # cost of unnecessary retention campaign
 
-# Profit curve para threshold otimization
+# Profit curve for threshold optimization
 def business_profit(y_true, y_pred_proba, threshold):
     y_pred = (y_pred_proba >= threshold).astype(int)
-    fn = ((y_true == 1) & (y_pred == 0)).sum()  # perdeu o cliente
-    fp = ((y_true == 0) & (y_pred == 1)).sum()  # campanha desnecessária
-    return -(fn * CUSTO_FALSO_NEGATIVO + fp * CUSTO_FALSO_POSITIVO)
+    fn = ((y_true == 1) & (y_pred == 0)).sum()  # lost customer
+    fp = ((y_true == 0) & (y_pred == 1)).sum()  # unnecessary campaign
+    return -(fn * COST_FALSE_NEGATIVE + fp * COST_FALSE_POSITIVE)
 ```
 
-#### Matriz de confusão interpretada
+#### Confusion Matrix Interpretation
 
 ```
-                    Previsto: Fica    Previsto: Sai
-Real: Fica (7.962)     TN               FP
-                    Classificação      Ação de retenção
-                    correta            desnecessária
-                                       Custo: ~R$20/cliente
+                    Predicted: Stays    Predicted: Leaves
+Real: Stays (7,962)      TN                  FP
+                    Correct               Unnecessary retention
+                    classification        action
+                                         Cost: ~$20/customer
 
-Real: Sai (2.038)      FN               TP
-                    Cliente perdido    Intervenção bem-
-                    sem intervenção    sucedida
-                    Custo: ~R$500      Receita preservada
+Real: Leaves (2,038)     FN                  TP
+                    Lost customer        Successful
+                    without intervention intervention
+                    Cost: ~$500          Revenue preserved
 ```
 
-### 8.6 Performance baseline esperada
+### 8.6 Expected Baseline Performance
 
-Com base nas características do dataset e na literatura para problemas similares:
+Based on dataset characteristics and literature for similar problems:
 
-| Cenário | ROC-AUC esperado | Notas |
+| Scenario | Expected ROC-AUC | Notes |
 |---|---|---|
-| **Com `Complain` (upper bound)** | 0.99–1.00 | Leakage — não usar em produção |
-| **Sem `Complain`, XGBoost** | 0.82–0.88 | Target realista para este dataset |
-| **Sem `Complain`, Random Forest** | 0.78–0.84 | Bom baseline |
-| **Sem `Complain`, Logistic Reg.** | 0.72–0.78 | Baseline mínimo |
-| **Modelo trivial (sempre prediz "fica")** | 0.50 | Piso do ROC-AUC |
+| **With `Complain` (upper bound)** | 0.99–1.00 | Leakage — do not use in production |
+| **Without `Complain`, XGBoost** | 0.82–0.88 | Realistic target for this dataset |
+| **Without `Complain`, Random Forest** | 0.78–0.84 | Good baseline |
+| **Without `Complain`, Logistic Reg.** | 0.72–0.78 | Minimum baseline |
+| **Trivial model (always predicts "stays")** | 0.50 | ROC-AUC floor |
 
-**Recall para classe churn esperado (sem `Complain`):**
-- XGBoost otimizado: 0.65–0.75
-- Com SMOTE + XGBoost: 0.70–0.80
+**Expected Recall for churn class (without `Complain`):**
+- Optimized XGBoost: 0.65–0.75
+- With SMOTE + XGBoost: 0.70–0.80
 
-### 8.7 Configuração de validação cruzada
+### 8.7 Cross-Validation Setup
 
 ```python
 from sklearn.model_selection import StratifiedKFold
 
-# Manter proporção de classes em cada fold
+# Maintain class proportion in each fold
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-# Split train/test estratificado
+# Stratified train/test split
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, 
     test_size=0.20, 
     random_state=42, 
-    stratify=y  # <- essencial para manter 80/20 em cada split
+    stratify=y  # <- essential to maintain 80/20 in each split
 )
 ```
 
-### 8.8 Features a excluir do modelo final
+### 8.8 Features to Exclude from Final Model
 
-| Feature | Motivo |
+| Feature | Reason |
 |---|---|
-| `Complain` | Leakage potencial — investigar antes de usar |
-| `Card Type` | Sem associação significativa com churn (p=0.168) |
-| `HasCrCard` | Sem associação significativa (p=0.485) |
-| `EstimatedSalary` | Sem associação significativa (p=0.211) |
-| `Point Earned` | Sem associação significativa (p=0.644) |
-| `Satisfaction Score` | Sem associação significativa (p=0.559) |
+| `Complain` | Potential leakage — investigate before using |
+| `Card Type` | No significant association with churn (p=0.168) |
+| `HasCrCard` | No significant association (p=0.485) |
+| `EstimatedSalary` | No significant association (p=0.211) |
+| `Point Earned` | No significant association (p=0.644) |
+| `Satisfaction Score` | No significant association (p=0.559) |
 
-> Atenção: "sem associação linear" não significa "sem valor preditivo". Modelos não-lineares (Random Forest, XGBoost) podem extrair valor dessas features via interações. Usar SHAP values para confirmação.
+> Caution: "No linear association" does not mean "no predictive value." Non-linear models (Random Forest, XGBoost) may extract value from these features via interactions. Use SHAP values for confirmation.
 
 ---
 
-## 9. Parâmetros derivados para Great Expectations
+## 9. Parameters Derived for Great Expectations
 
-Esta seção consolida os parâmetros calculados da EDA para atualização direta do `config/quality.yaml`.
+This section consolidates parameters calculated from the EDA for direct updating of `config/quality.yaml`.
 
-> Todos os valores foram derivados do dataset real usando percentis robustos (p01–p99) + tolerâncias estatísticas.
+> All values were derived from the real dataset using robust percentiles (p01–p99) + statistical tolerances.
 
-### 9.1 Expectations de tabela
+### 9.1 Table Expectations
 
 ```yaml
 table_expectations:
   - type: expect_table_row_count_to_be_between
     kwargs:
-      min_value: 8000    # 10.000 × 0.80 — tolerância de -20%
-      max_value: 12000   # 10.000 × 1.20 — tolerância de +20%
+      min_value: 8000    # 10,000 × 0.80 — tolerance of -20%
+      max_value: 12000   # 10,000 × 1.20 — tolerance of +20%
 
   - type: expect_table_columns_to_match_set
     kwargs:
@@ -659,117 +659,117 @@ table_expectations:
       exact_match: true
 ```
 
-### 9.2 Expectations de coluna — Numéricas contínuas
+### 9.2 Expectations for Numeric Continuous Columns
 
 ```yaml
 column_expectations:
 
   CreditScore:
-    # Dados observados: min=350, max=850, média=650.5, std=96.7
+    # Observed data: min=350, max=850, mean=650.5, std=96.7
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 432    # p01 observado
-        max_value: 850    # p99 observado (máximo histórico de score)
+        min_value: 432    # p01 observed
+        max_value: 850    # p99 observed (historical maximum score)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 457.2  # média - 2σ = 650.5 - 2×96.7
-        max_value: 843.8  # média + 2σ = 650.5 + 2×96.7
+        min_value: 457.2  # mean - 2σ = 650.5 - 2×96.7
+        max_value: 843.8  # mean + 2σ = 650.5 + 2×96.7
     - type: expect_column_stdev_to_be_between
       kwargs:
         min_value: 48.3   # std × 0.5 = 96.7 × 0.5
         max_value: 145.0  # std × 1.5 = 96.7 × 1.5
 
   Age:
-    # Dados observados: min=18, max=92, média=38.9, std=10.5, assimétrico
+    # Observed data: min=18, max=92, mean=38.9, std=10.5, skewed
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 21     # p01 observado (mínimo legal realista = 18)
-        max_value: 72     # p99 observado (alguns clientes chegam a 92, mas são raros)
+        min_value: 21     # p01 observed (legal minimum realistic = 18)
+        max_value: 72     # p99 observed (some customers reach 92, but rare)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 17.9   # média - 2σ
-        max_value: 59.9   # média + 2σ
+        min_value: 17.9   # mean - 2σ
+        max_value: 59.9   # mean + 2σ
     - type: expect_column_stdev_to_be_between
       kwargs:
         min_value: 5.2    # std × 0.5
         max_value: 15.7   # std × 1.5
 
   Balance:
-    # ATENÇÃO: 36.17% dos clientes têm saldo = 0 — comportamento normal
-    # Dados observados: min=0, max=250.898, mediana=97.199
+    # CAUTION: 36.17% of customers have balance = 0 — normal behavior
+    # Observed data: min=0, max=250,898, median=97,199
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0      # Zero é valor legítimo e frequente
-        max_value: 250898 # Máximo histórico observado
+        min_value: 0      # Zero is legitimate and frequent value
+        max_value: 250898 # Historical maximum observed
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 0      # Média pode variar bastante (bimodal)
-        max_value: 201281 # média + 2σ = 76.486 + 2×62.397
+        min_value: 0      # Mean can vary significantly (bimodal)
+        max_value: 201281 # mean + 2σ = 76,486 + 2×62,397
 
   EstimatedSalary:
-    # Dados observados: min=11.58, max=199.992, uniforme
+    # Observed data: min=11.58, max=199,992, uniform
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0        # Não pode ser negativo
-        max_value: 200000   # Limite observado (próximo de 200k)
+        min_value: 0        # Cannot be negative
+        max_value: 200000   # Observed limit (close to 200k)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 0        # Média - 2σ (pode ser uniforme em outro batch)
-        max_value: 215111   # média + 2σ = 100.090 + 2×57.510
+        min_value: 0        # Mean - 2σ (may be uniform in other batch)
+        max_value: 215111   # mean + 2σ = 100,090 + 2×57,510
 
   Point Earned:
-    # Dados observados: min=119, max=1000, uniforme
+    # Observed data: min=119, max=1000, uniform
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 119    # Mínimo histórico (pode ser 0 em prod com clientes novos)
-        max_value: 1000   # Máximo do programa de pontos
+        min_value: 119    # Historical minimum (could be 0 in prod with new customers)
+        max_value: 1000   # Loyalty program maximum
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 154.7  # média - 2σ = 606.5 - 2×225.9
-        max_value: 1058.4 # média + 2σ (truncar em 1000 na prática)
+        min_value: 154.7  # mean - 2σ = 606.5 - 2×225.9
+        max_value: 1058.4 # mean + 2σ (cap at 1000 in practice)
 ```
 
-### 9.3 Expectations de coluna — Numéricas discretas
+### 9.3 Expectations for Discrete Numeric Columns
 
 ```yaml
   Tenure:
-    # Dados observados: min=0, max=10, média=5.01, uniforme
+    # Observed data: min=0, max=10, mean=5.01, uniform
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0    # Cliente novo
-        max_value: 10   # Máximo histórico = 10 anos
+        min_value: 0    # New customer
+        max_value: 10   # Historical maximum = 10 years
 
   NumOfProducts:
-    # ATENÇÃO: relação não-linear com churn. 3-4 produtos = altíssimo churn
-    # Dados observados: min=1, max=4, mediana=1
+    # CAUTION: non-linear relationship with churn. 3-4 products = very high churn
+    # Observed data: min=1, max=4, median=1
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 1    # Mínimo: pelo menos 1 produto
-        max_value: 4    # Máximo histórico observado
+        min_value: 1    # Minimum: at least 1 product
+        max_value: 4    # Historical maximum observed
 
   Satisfaction Score:
-    # Escala fixa 1–5
+    # Fixed scale 1–5
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 1    # Pior nota
-        max_value: 5    # Melhor nota
+        min_value: 1    # Worst score
+        max_value: 5    # Best score
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: [1, 2, 3, 4, 5]
 ```
 
-### 9.4 Expectations de coluna — Binárias
+### 9.4 Expectations for Binary Columns
 
 ```yaml
   HasCrCard:
@@ -797,7 +797,7 @@ column_expectations:
         value_set: [0, 1]
 ```
 
-### 9.5 Expectations de coluna — Categóricas
+### 9.5 Expectations for Categorical Columns
 
 ```yaml
   Geography:
@@ -805,8 +805,8 @@ column_expectations:
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: ["France", "Germany", "Spain"]
-    # Distribuição observada: France=50.1%, Germany=25.1%, Spain=24.8%
-    # Alerta se Germany > 40% (mudança de distribuição suspeita)
+    # Observed distribution: France=50.1%, Germany=25.1%, Spain=24.8%
+    # Alert if Germany > 40% (suspicious distribution shift)
 
   Gender:
     - type: expect_column_values_to_not_be_null
@@ -819,31 +819,31 @@ column_expectations:
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: ["DIAMOND", "GOLD", "SILVER", "PLATINUM"]
-    # Distribuição perfeitamente balanceada (~25% cada)
-    # Qualquer desvio grande indicaria problema de encoding
+    # Perfectly balanced distribution (~25% each)
+    # Any large deviation would signal encoding issue
 ```
 
 ---
 
-## Outputs gerados pelo script EDA
+## Outputs Generated by EDA Script
 
 ```
 outputs/eda/
-├── eda_report_20260411_114506.json      ← Relatório completo (10 seções)
+├── eda_report_20260411_114506.json      ← Complete report (10 sections)
 └── plots/
-    ├── 01_target_distribution.png       ← Distribuição do churn (pizza + barras)
-    ├── 02_numeric_distributions.png     ← Histogramas de todas as numéricas
-    ├── 03_numeric_by_target_boxplot.png ← Boxplots: numéricas × churn
-    ├── 04_correlation_heatmap.png       ← Heatmap Pearson (triângulo inferior)
-    ├── 05_categorical_by_target.png     ← Geografia, Gênero, Cartão × churn (%)
-    ├── 06_age_distribution_by_churn.png ← KDE de idade: retidos vs saídos
-    ├── 07_balance_distribution.png      ← Distribuição de saldo (com zeros)
-    ├── 08_creditscore_by_geography.png  ← CreditScore por país e churn
-    ├── 09_satisfaction_and_points.png   ← Satisfação e pontos × churn
-    └── 10_products_and_tenure_churn.png ← Taxa de churn por produtos e tenure
+    ├── 01_target_distribution.png       ← Churn distribution (pie + bars)
+    ├── 02_numeric_distributions.png     ← Histograms of all numeric variables
+    ├── 03_numeric_by_target_boxplot.png ← Boxplots: numeric × churn
+    ├── 04_correlation_heatmap.png       ← Pearson heatmap (lower triangle)
+    ├── 05_categorical_by_target.png     ← Geography, Gender, Card × churn (%)
+    ├── 06_age_distribution_by_churn.png ← Age KDE: retained vs. churned
+    ├── 07_balance_distribution.png      ← Balance distribution (with zeros)
+    ├── 08_creditscore_by_geography.png  ← CreditScore by country and churn
+    ├── 09_satisfaction_and_points.png   ← Satisfaction and points × churn
+    └── 10_products_and_tenure_churn.png ← Churn rate by products and tenure
 ```
 
 ---
 
-*Documento gerado a partir da análise exploratória realizada pelo script `eda/eda_analysis.py`.*
-*Para regenerar: `python eda/eda_analysis.py` (com venv ativa)*
+*Document generated from exploratory data analysis performed by script `eda/eda_analysis.py`.*  
+*To regenerate: `python eda/eda_analysis.py` (with venv active)*

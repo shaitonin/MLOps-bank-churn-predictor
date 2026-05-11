@@ -1,7 +1,7 @@
 """
-streamlit_app.py — Interface visual de predição de churn
+streamlit_app.py — Visual churn prediction interface
 
-Iniciar:
+Start:
   cd /Users/Shaiane/Projeto_MLOps_Bank_Churn
   source venv/bin/activate
   streamlit run app/streamlit_app.py
@@ -17,49 +17,49 @@ if str(ROOT_DIR) not in sys.path:
 
 from src.inference import ChurnPredictor
 
-# ── Configuração da página ────────────────────────────────────────────────────
+# ── Page configuration ───────────────────────────────────────────────────────
 st.set_page_config(
     page_title='Bank Churn Predictor',
     page_icon='🏦',
     layout='wide',
 )
 
-# ── Carregar modelo (uma vez, em cache) ───────────────────────────────────────
+# ── Load model (cached once) ─────────────────────────────────────────────────
 @st.cache_resource
 def load_predictor():
     return ChurnPredictor()
 
 predictor = load_predictor()
 
-# ── Título ────────────────────────────────────────────────────────────────────
+# ── Title ───────────────────────────────────────────────────────────────────
 st.title('🏦 Bank Customer Churn Predictor')
-st.caption(f'Modelo: `{predictor.source}` · Threshold: `{predictor.threshold}`')
+st.caption(f'Model: `{predictor.source}` · Threshold: `{predictor.threshold}`')
 st.divider()
 
-# ── Layout: formulário + resultado ───────────────────────────────────────────
+# ── Layout: form + result ───────────────────────────────────────────────────
 col_form, col_result = st.columns([1, 1], gap='large')
 
 with col_form:
-    st.subheader('Dados do Cliente')
+    st.subheader('Customer Data')
 
     c1, c2 = st.columns(2)
     with c1:
         credit_score    = st.slider('Credit Score', 300, 850, 650)
-        age             = st.slider('Idade', 18, 92, 42)
-        tenure          = st.slider('Tempo como cliente (anos)', 0, 10, 5)
-        num_products    = st.selectbox('Nº de Produtos', [1, 2, 3, 4], index=1)
-        has_cr_card     = st.toggle('Possui cartão de crédito', value=True)
-        is_active       = st.toggle('Membro ativo', value=True)
+        age             = st.slider('Age', 18, 92, 42)
+        tenure          = st.slider('Client tenure (years)', 0, 10, 5)
+        num_products    = st.selectbox('Number of Products', [1, 2, 3, 4], index=1)
+        has_cr_card     = st.toggle('Has credit card', value=True)
+        is_active       = st.toggle('Active member', value=True)
 
     with c2:
-        balance         = st.number_input('Saldo (€)', 0, 300000, 50000, step=5000)
-        salary          = st.number_input('Salário estimado (€)', 10000, 250000, 80000, step=5000)
-        geography       = st.selectbox('País', ['France', 'Germany', 'Spain'])
-        gender          = st.selectbox('Gênero', ['Male', 'Female'])
+        balance         = st.number_input('Balance (€)', 0, 300000, 50000, step=5000)
+        salary          = st.number_input('Estimated salary (€)', 10000, 250000, 80000, step=5000)
+        geography       = st.selectbox('Country', ['France', 'Germany', 'Spain'])
+        gender          = st.selectbox('Gender', ['Male', 'Female'])
 
-    predict_btn = st.button('🔮 Prever Churn', use_container_width=True, type='primary')
+    predict_btn = st.button('🔮 Predict Churn', use_container_width=True, type='primary')
 
-# ── Montar features ───────────────────────────────────────────────────────────
+# ── Build features ────────────────────────────────────────────────────────────
 def build_features(credit_score, age, tenure, balance, num_products,
                    has_cr_card, is_active, salary, geography, gender) -> dict:
     age_group_young  = int(age < 30)
@@ -93,9 +93,9 @@ def build_features(credit_score, age, tenure, balance, num_products,
         'ProductsPerYear':   products_year,
     }
 
-# ── Resultado ─────────────────────────────────────────────────────────────────
+# ── Prediction result ────────────────────────────────────────────────────────
 with col_result:
-    st.subheader('Resultado da Predição')
+    st.subheader('Prediction Result')
 
     if predict_btn:
         features = build_features(
@@ -109,15 +109,15 @@ with col_result:
         risk       = result['risk_level']
         pct        = int(prob * 100)
 
-        # Cor e ícone por nível de risco
+        # Color and icon by risk level
         if risk == 'high':
-            color, icon, label = '#d32f2f', '🔴', 'ALTO RISCO DE CHURN'
+            color, icon, label = '#d32f2f', '🔴', 'HIGH CHURN RISK'
         elif risk == 'medium':
-            color, icon, label = '#f57c00', '🟡', 'RISCO MODERADO'
+            color, icon, label = '#f57c00', '🟡', 'MODERATE RISK'
         else:
-            color, icon, label = '#388e3c', '🟢', 'BAIXO RISCO'
+            color, icon, label = '#388e3c', '🟢', 'LOW RISK'
 
-        # Card principal
+        # Main card
         st.markdown(f"""
         <div style="
             background:{color}18; border:2px solid {color};
@@ -126,45 +126,45 @@ with col_result:
             <div style="font-size:48px">{icon}</div>
             <div style="font-size:22px; font-weight:700; color:{color}">{label}</div>
             <div style="font-size:52px; font-weight:800; color:{color}; margin:8px 0">{pct}%</div>
-            <div style="color:#555; font-size:14px">probabilidade de churn</div>
+            <div style="color:#555; font-size:14px">churn probability</div>
         </div>
         """, unsafe_allow_html=True)
 
         st.markdown('')
 
-        # Barra de progresso
-        st.progress(prob, text=f'Probabilidade: {prob:.4f}')
+        # Progress bar
+        st.progress(prob, text=f'Probability: {prob:.4f}')
 
-        # Métricas secundárias
+        # Secondary metrics
         m1, m2, m3 = st.columns(3)
-        m1.metric('Predição', '⚠ Churn' if flag else '✓ Retido')
-        m2.metric('Nível de risco', risk.capitalize())
+        m1.metric('Prediction', '⚠ Churn' if flag else '✓ Retained')
+        m2.metric('Risk level', risk.capitalize())
         m3.metric('Threshold', f'{result["threshold_used"]:.2f}')
 
-        # Fatores de risco identificados
-        st.markdown('**Fatores de risco identificados:**')
+        # Identified risk factors
+        st.markdown('**Identified risk factors:**')
         risks = []
-        if age >= 50:            risks.append(f'• Idade elevada ({age} anos)')
-        if not is_active:        risks.append('• Cliente inativo')
-        if num_products == 1:    risks.append('• Apenas 1 produto')
+        if age >= 50:            risks.append(f'• Older age ({age} years)')
+        if not is_active:        risks.append('• Inactive customer')
+        if num_products == 1:    risks.append('• Only 1 product')
         if balance > 100000 and not is_active:
-                                 risks.append(f'• Saldo alto sem engajamento (€{balance:,.0f})')
-        if geography == 'Germany': risks.append('• País: Germany (maior taxa histórica de churn)')
-        if credit_score < 500:   risks.append(f'• Credit score baixo ({credit_score})')
+                                 risks.append(f'• High balance without engagement (€{balance:,.0f})')
+        if geography == 'Germany': risks.append('• Country: Germany (historically higher churn)')
+        if credit_score < 500:   risks.append(f'• Low credit score ({credit_score})')
 
         if risks:
             for r in risks:
                 st.markdown(r)
         else:
-            st.markdown('• Nenhum fator de risco crítico identificado')
+            st.markdown('• No critical risk factors identified')
 
     else:
-        st.info('Preencha os dados do cliente e clique em **Prever Churn**.')
+        st.info('Fill in the customer data and click **Predict Churn**.')
 
-# ── Seção: batch de clientes ──────────────────────────────────────────────────
+# ── Batch prediction section ─────────────────────────────────────────────────
 st.divider()
-st.subheader('📋 Predição em Lote')
-st.caption('Cole dados de múltiplos clientes (CSV) ou use o exemplo abaixo.')
+st.subheader('📋 Batch Prediction')
+st.caption('Paste multiple customer records (CSV) or use the example below.')
 
 EXAMPLE_CSV = """CreditScore,Age,Tenure,Balance,NumOfProducts,HasCrCard,IsActiveMember,EstimatedSalary,Geography,Gender
 400,55,2,180000,1,0,0,60000,Germany,Female
@@ -172,9 +172,9 @@ EXAMPLE_CSV = """CreditScore,Age,Tenure,Balance,NumOfProducts,HasCrCard,IsActive
 620,45,4,95000,1,1,0,75000,Spain,Female
 750,28,6,0,2,1,1,95000,France,Male"""
 
-csv_input = st.text_area('Dados CSV:', value=EXAMPLE_CSV, height=140)
+csv_input = st.text_area('CSV data:', value=EXAMPLE_CSV, height=140)
 
-if st.button('🔮 Prever Lote', use_container_width=False):
+if st.button('🔮 Predict Batch', use_container_width=False):
     try:
         import io
         raw = pd.read_csv(io.StringIO(csv_input))
@@ -188,14 +188,14 @@ if st.button('🔮 Prever Lote', use_container_width=False):
             )
             r = predictor.predict_single(f)
             rows.append({
-                'País':        row['Geography'],
-                'Gênero':      row['Gender'],
-                'Idade':       int(row['Age']),
-                'Produtos':    int(row['NumOfProducts']),
-                'Ativo':       '✓' if row['IsActiveMember'] else '✗',
-                'Prob. Churn': f"{r['churn_probability']:.2%}",
-                'Risco':       r['risk_level'].capitalize(),
-                'Flag':        '⚠ Churn' if r['churn_flag'] else '✓ Retido',
+                'Country':      row['Geography'],
+                'Gender':       row['Gender'],
+                'Age':          int(row['Age']),
+                'Products':     int(row['NumOfProducts']),
+                'Active':       '✓' if row['IsActiveMember'] else '✗',
+                'Churn Prob.':  f"{r['churn_probability']:.2%}",
+                'Risk':         r['risk_level'].capitalize(),
+                'Flag':         '⚠ Churn' if r['churn_flag'] else '✓ Retained',
             })
 
         df_out = pd.DataFrame(rows)
@@ -206,12 +206,12 @@ if st.button('🔮 Prever Lote', use_container_width=False):
             return 'background-color:#e8f5e9; color:#2e7d32'
 
         st.dataframe(
-            df_out.style.map(_color_risk, subset=['Risco']),
+            df_out.style.map(_color_risk, subset=['Risk']),
             use_container_width=True,
         )
 
         n_churn = sum(1 for r in rows if r['Flag'] == '⚠ Churn')
-        st.metric('Clientes com risco de churn', f'{n_churn} / {len(rows)}')
+        st.metric('Customers at churn risk', f'{n_churn} / {len(rows)}')
 
     except Exception as e:
-        st.error(f'Erro ao processar CSV: {e}')
+        st.error(f'Error processing CSV: {e}')

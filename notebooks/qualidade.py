@@ -6,7 +6,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 # %%
-# definições
+# definitions
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SECRETS_PATH = ROOT_DIR / 'secrets.env'
 CONFIG_DIR = ROOT_DIR / 'config'
@@ -15,7 +15,7 @@ DATA_CONFIG = CONFIG_DIR / 'data.yaml'
 QUALITY_CONFIG = CONFIG_DIR / 'quality.yaml'
 PATHS_LIST = [str(ROOT_DIR), str(CONFIG_DIR)]
 
-# adicionar o root e o config no meu path do sistema
+# add root and config to system path
 for _p in PATHS_LIST:
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -24,50 +24,49 @@ from src.utils.logger import get_logger
 from src.utils.config_loader import load_yaml
 from src.quality_checks import run_quality_checks, save_quality_report
 
-# Carregar arquivos de configuração
+# Load configuration files
 pipeline_config = load_yaml(PIPELINE_CONFIG)
 data_config = load_yaml(DATA_CONFIG)
 quality_config = load_yaml(QUALITY_CONFIG)
 
-# Unir em um único dicionário
+# Merge into a single dictionary
 config = {
     **pipeline_config,
     **data_config,
     **quality_config
 }
 
-# Criar logger
+# Create logger
 log_cfg = config.get('logging')
 logger = get_logger(
-    name='qualidade',
+    name='quality',
     logging_config=log_cfg
 )
 
 #%%
-# obter os caminhos dos dados de entrada
+# get input data paths
 processed_dir = ROOT_DIR / config.get('paths').get('processed_data_dir')
 parquet_path = processed_dir / config.get('paths').get('output_filename')
 
-logger.info('Caminho do Parquet: %s', parquet_path)
+logger.info('Parquet path: %s', parquet_path)
 
 if not parquet_path.exists():
-    logger.error('Arquivo Parquet não encontrado: %s', parquet_path)
-    raise FileNotFoundError(f'Arquivo Parquet não encontrado: {parquet_path}')
+    logger.error('Parquet file not found: %s', parquet_path)
+    raise FileNotFoundError(f'Parquet file not found: {parquet_path}')
 
-# inspeção do schema
+# schema inspection
 schema = pq.read_schema(parquet_path)
-logger.info('Schema (%d colunas):', len(schema))
+logger.info('Schema (%d columns):', len(schema))
 for i, field in enumerate(schema):
     logger.info('  %d: %s (%s)', i + 1, field.name, field.type)
 
-# carregar os dados em um DataFrame do Pandas
+# load data into a Pandas DataFrame
 df = pd.read_parquet(parquet_path)
-# pq.read_table(parquet_path).to_pandas()
-logger.info('Dados carregados: %d linhas, %d colunas', df.shape[0], df.shape[1])
+logger.info('Data loaded: %d rows, %d columns', df.shape[0], df.shape[1])
 
 
 #%%
-# execução da validação de qualidade - usando o YAML como SST
+# run quality validation — using YAML as single source of truth
 summary = run_quality_checks(
     df=df,
     config=config,
@@ -75,10 +74,10 @@ summary = run_quality_checks(
 )
 logger.info(summary)
 # %%
-# persistir o relatório de qualidade
+# persist quality report
 output_dir = ROOT_DIR / config.get('output_dir', 'outputs/quality')
 
-# salva o relatório em JSON
+# save report as JSON
 report_path = save_quality_report(
     summary=summary,
     output_dir=output_dir,
@@ -88,24 +87,24 @@ report_path = save_quality_report(
 fail_on_err = config.get('fail_pipeline_on_error', True)
 
 if summary['success']:
-    logger.info('=== Qualidade APROVADA — dados prontos para o próximo passo ===')
+    logger.info('=== Quality PASSED — data ready for the next step ===')
 else:
     logger.warning(
-        '=== Qualidade com PENDÊNCIAS: %d/%d checks falharam ===',
+        '=== Quality with FAILURES: %d/%d checks failed ===',
         summary['failed'],
         summary['total'],
     )
     logger.warning(
         'fail_pipeline_on_error=%s — %s',
         fail_on_err,
-        'RuntimeError será lançado' if fail_on_err else 'continuando mesmo assim (modo exploração)',
+        'RuntimeError will be raised' if fail_on_err else 'continuing anyway (exploration mode)',
     )
 
 # %%
-# Resumo 
+# Summary
 logger.info('─' * 60)
-logger.info('Entrada : %s', parquet_path)
-logger.info('Relatório: %s', report_path)
-logger.info('Checks   : %d total | %d passaram | %d falharam',
+logger.info('Input    : %s', parquet_path)
+logger.info('Report   : %s', report_path)
+logger.info('Checks   : %d total | %d passed | %d failed',
             summary['total'], summary['passed'], summary['failed'])
-logger.info('Status   : %s', 'APROVADO' if summary['success'] else 'REPROVADO')
+logger.info('Status   : %s', 'PASSED' if summary['success'] else 'FAILED')

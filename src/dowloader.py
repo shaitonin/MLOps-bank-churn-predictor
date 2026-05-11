@@ -40,14 +40,10 @@ def list_remote_files(
     try:
         from kaggle.api.kaggle_api_extended import KaggleApi
 
-        # autenticação na API do Kaggle
         api = KaggleApi()
         api.authenticate()
 
-        # lista de conjuntos de dados desejados
         files = api.dataset_list_files(dataset).files
-
-        # lista de arquivos que desejamos
         matched = sorted(
             f.name for f in files if fnmatch.fnmatch(f.name, file_pattern)
         )
@@ -64,8 +60,6 @@ def list_remote_files(
             f"Failed to list files in Kaggle dataset '{dataset}': {exc}"
         ) from exc
 #%%
-##download do dataset (codigo copiado)
-
 def download_dataset(
     dataset: str,
     expected_files: list[str],
@@ -179,7 +173,7 @@ def _files_already_present(destination_dir: Path, expected_files: list[str]) -> 
 
 
 def _format_size(size_bytes: int) -> str:
-    """Format bytes into a human-readable string.""" #serve so para o loogger
+    """Format bytes into a human-readable string."""
     for unit in ("B", "KB", "MB", "GB"):
         if size_bytes < 1024:
             return f"{size_bytes:.1f} {unit}"

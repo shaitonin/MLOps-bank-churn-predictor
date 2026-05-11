@@ -1,13 +1,13 @@
 """
-main.py — API de Inferência de Churn (FastAPI)
+main.py — Churn Inference API (FastAPI)
 
 Endpoints:
-  GET  /health       — status da API e versão do modelo
-  POST /predict      — predição para um cliente
-  POST /predict/batch — predição para múltiplos clientes
+  GET  /health       — API status and model version
+  POST /predict      — prediction for a single customer
+  POST /predict/batch — prediction for multiple customers
 
-Iniciar:
-  cd /Users/Shaiane/Projeto_MLOps_Bank_Churn
+Start:
+  cd /Users/Shaiane/Projeto_MLOPs_Bank_Churn-English
   source venv/bin/activate
   uvicorn app.main:app --reload --port 8000
 """
@@ -30,11 +30,11 @@ from src.inference import ChurnPredictor
 
 app = FastAPI(
     title       = 'Bank Churn Prediction API',
-    description = 'Prediz probabilidade de churn de clientes bancários.',
+    description = 'Predicts the probability of bank customer churn.',
     version     = '1.0.0',
 )
 
-# Carrega modelo uma vez no startup
+# Load the model once at startup
 _predictor: ChurnPredictor | None = None
 
 @app.on_event('startup')
@@ -88,7 +88,7 @@ class BatchRequest(BaseModel):
 @app.get('/health')
 def health():
     if _predictor is None:
-        raise HTTPException(status_code=503, detail='Modelo não carregado.')
+        raise HTTPException(status_code=503, detail='Model not loaded.')
     return {
         'status':       'ok',
         'model_source': _predictor.source,
@@ -99,7 +99,7 @@ def health():
 @app.post('/predict', response_model=PredictionResponse)
 def predict(customer: CustomerFeatures, threshold: float | None = None):
     if _predictor is None:
-        raise HTTPException(status_code=503, detail='Modelo não carregado.')
+        raise HTTPException(status_code=503, detail='Model not loaded.')
     try:
         result = _predictor.predict_single(customer.model_dump(), threshold=threshold)
         return result
@@ -110,9 +110,9 @@ def predict(customer: CustomerFeatures, threshold: float | None = None):
 @app.post('/predict/batch')
 def predict_batch(request: BatchRequest):
     if _predictor is None:
-        raise HTTPException(status_code=503, detail='Modelo não carregado.')
+        raise HTTPException(status_code=503, detail='Model not loaded.')
     if not request.customers:
-        raise HTTPException(status_code=400, detail='Lista de clientes vazia.')
+        raise HTTPException(status_code=400, detail='Customer list is empty.')
     try:
         import pandas as pd
         t0  = time.time()

@@ -1,9 +1,9 @@
 """
-src/quality.py — Validação de qualidade de dados via Great Expectations.
+src/quality.py — Data quality validation via Great Expectations.
 
-Fluxo:
+Flow:
   run_quality_checks(df, config) → summary dict
-  save_quality_report(summary, output_dir) → Path do JSON salvo
+  save_quality_report(summary, output_dir) → Path of saved JSON
 """
 import json
 import pandas as pd
@@ -13,41 +13,41 @@ from datetime import datetime
 from src.utils.logger import get_logger
 
 def _import_ge():
-    """Importa great_expectations; levanta ImportError descritivo se ausente."""
+    """Import great_expectations; raise a descriptive ImportError if missing."""
     try:
         import great_expectations as gx
         import great_expectations.expectations as gxe
         return gx, gxe
     except ImportError as exc:
         raise ImportError(
-            "great-expectations não encontrado.\n"
-            "Instale com:  pip install great-expectations>=1.0.0\n"
-            "Ou adicione ao requirements.txt e execute pip install -r requirements.txt"
+            "great-expectations not found.\n"
+            "Install with:  pip install great-expectations>=1.0.0\n"
+            "Or add it to requirements.txt and run pip install -r requirements.txt"
         ) from exc
     
 def _build_ephemeral_context(df: pd.DataFrame, suite_name: str):
     """
-    Cria um contexto efêmero GE com datasource pandas e retorna
+    Create an ephemeral GE context with a pandas datasource and return
     (context, batch_definition, suite).
 
-    O contexto efêmero não persiste nada em disco — ideal para pipelines
-    reprodutíveis. Toda a configuração vem do YAML, não de arquivos GE.
+    The ephemeral context does not persist anything to disk — ideal for
+    reproducible pipelines. All configuration comes from YAML, not GE files.
     """
     gx, _ =_import_ge()
 
-    # contexto efêmero
+    # ephemeral context
     context = gx.get_context(
         mode='ephemeral'
     )
 
-    # datasource pandas
+    # pandas datasource
     data_source = context.data_sources.add_pandas("pipeline_source")
     asset = data_source.add_dataframe_asset(
         name="input_data"
     )
     batch_def = asset.add_batch_definition_whole_dataframe('full_batch')
 
-    # criar uma suite vazia (expectations serão adicionadas dinamicamente)
+    # create an empty suite (expectations will be added dynamically)
     suite = context.suites.add(
         gx.ExpectationSuite(name=suite_name)
     )
@@ -55,20 +55,20 @@ def _build_ephemeral_context(df: pd.DataFrame, suite_name: str):
     return context, batch_def, suite
 
 def _snake_to_pascal(snake_str: str) -> str:
-    """Converte snake_case para PascalCase (ex.: row_count → RowCount)."""
+    """Convert snake_case to PascalCase (e.g.: row_count → RowCount)."""
     return ''.join(word.capitalize() for word in snake_str.split('_'))
 
 def _resolve_expectation_class(gxe, type_name: str):
     """
-    Resolve a classe GE a partir do nome em snake_case ou PascalCase.
+    Resolve a GE class from a snake_case or PascalCase name.
 
-    Aceita ambas as convenções para não forçar o usuário do YAML a memorizar
-    a capitalização exata.
+    Accepts both conventions so the YAML user does not have to memorize
+    exact capitalization.
 
     Raises:
-        AttributeError: se o tipo não existir no módulo de expectations do GE.
+        AttributeError: if the type does not exist in the GE expectations module.
     """
-    # tentar PascalCase primeiro
+    # try PascalCase first
     pascal = _snake_to_pascal(type_name)
 
     if hasattr(gxe, pascal):
@@ -77,7 +77,7 @@ def _resolve_expectation_class(gxe, type_name: str):
         return getattr(gxe, type_name)
     else:
         raise AttributeError(
-            f"Expectation type '{type_name}' não encontrado no módulo great_expectations.expectations."
+            f"Expectation type '{type_name}' not found in great_expectations.expectations module."
         )
 
 def _populate_suite_with_expectations(
@@ -87,16 +87,16 @@ def _populate_suite_with_expectations(
     gxe
 ) -> None:
     """
-    Adiciona dynamicamente as expectations à suite a partir das listas do YAML.
+    Add expectations dynamically to the suite from YAML lists.
 
-    Estratégia:
-      - table_exps: expectations sem coluna (ex.: row count, schema)
-      - column_exps: dict coluna → lista de expectations
+    Strategy:
+      - table_exps: expectations without a column (e.g.: row count, schema)
+      - column_exps: dict column → list of expectations
 
-    O despacho dinâmico via _resolve_expectation_class torna este módulo
-    completamente independente de quais expectations específicas o YAML define.
+    Dynamic dispatch via _resolve_expectation_class makes this module
+    independent of which specific expectations the YAML defines.
     """
-    # expectations de tabela
+    # table expectations
     for exp in (table_expectations or []):
         exp_class = _resolve_expectation_class(gxe, exp['type'])
         kwargs = exp.get('kwargs', {})
@@ -104,7 +104,7 @@ def _populate_suite_with_expectations(
             exp_class(**kwargs)
         )
 
-    # expectations de coluna
+    # column expectations
     for col, exps in (column_expectations or {}).items():
         for exp in exps:
             exp_class = _resolve_expectation_class(gxe, exp['type'])
@@ -114,48 +114,48 @@ def _populate_suite_with_expectations(
             )
 
 # ----------------------------------------------------------------------------------------------------------------    
-# função principal
+# main function
 def run_quality_checks(
     df: pd.DataFrame,
     config: dict[str, Any],
     logging_config: dict[str, Any]
 ) -> dict[str, Any]:
     """
-    Executa todas as verificações de qualidade definidas no config.
+    Execute all quality checks defined in the config.
 
     Args:
-        df:             DataFrame a ser validado (saída da ingestão).
-        config:         Dicionário combinado (pipeline.yaml + quality.yaml).
-        logging_config: Seção 'logging' do pipeline.yaml.
+        df:             DataFrame to validate (output of ingestion).
+        config:         Combined dictionary (pipeline.yaml + quality.yaml).
+        logging_config: 'logging' section from pipeline.yaml.
 
     Returns:
-        Dicionário com:
-          success  (bool)   — True se todas as expectations passaram
-          total    (int)    — número total de checks
-          passed   (int)    — checks que passaram
-          failed   (int)    — checks que falharam
-          results  (object) — resultado bruto do GE (para save_quality_report)
+        Dictionary with:
+          success  (bool)   — True if all expectations passed
+          total    (int)    — total number of checks
+          passed   (int)    — checks that passed
+          failed   (int)    — checks that failed
+          results  (object) — raw GE result (for save_quality_report)
 
     Raises:
-        RuntimeError: se fail_pipeline_on_error=true e algum check falhar.
-        ImportError:  se great-expectations não estiver instalado.
+        RuntimeError: if fail_pipeline_on_error=true and any check fails.
+        ImportError:  if great-expectations is not installed.
     """
     gx, gxe = _import_ge()
     logger = get_logger('quality_checks_module', logging_config=logging_config)
 
-    # ler parâmetros de qualidade do config
+    # read quality parameters from config
     suite_name = config.get('suite_name', 'default_suite')
     fail_on_error = config.get('fail_pipeline_on_error', True)
     table_expectations = config.get('table_expectations', [])
     column_expectations = config.get('column_expectations', [])
 
     total_exp = len(table_expectations) + sum(len(v) for v in column_expectations.values())
-    logger.info('Iniciando verificações de qualidade: %d checks definidos', total_exp)
+    logger.info('Starting quality checks: %d checks defined', total_exp)
 
-    # construir contexto efêmero e suite
+    # build ephemeral context and suite
     context, batch_def, suite = _build_ephemeral_context(df, suite_name)
 
-    # popular suite com expectations do config
+    # populate suite with config expectations
     _populate_suite_with_expectations(
         suite,
         table_expectations,
@@ -163,7 +163,7 @@ def run_quality_checks(
         gxe
     )
 
-    # cria e registra a ValidationDefinition
+    # create and register the ValidationDefinition
     validation_def = context.validation_definitions.add(
         gx.ValidationDefinition(
             name=f"{suite_name}_validation",
@@ -172,40 +172,40 @@ def run_quality_checks(
         )
     )
 
-    # executar a validação
-    logger.info('Executando validação de qualidade...')
+    # run validation
+    logger.info('Running quality validation...')
     results = validation_def.run(
         batch_parameters={
             'dataframe': df
         }
     )
 
-    # sumarização dos resultados
+    # summarize results
     success = results.success
     total = len(results.results)
     passed = sum(1 for r in results.results if r.success)
     failed = total - passed
 
     logger.info('-'*60)
-    logger.info('Resultados da validação de qualidade:')
+    logger.info('Quality validation results:')
     logger.info('  Total checks: %d', total)
-    logger.info('  Checks passados: %d', passed)
-    logger.info('  Checks falhados: %d', failed)
+    logger.info('  Passed checks: %d', passed)
+    logger.info('  Failed checks: %d', failed)
     logger.info('-'*60)
 
-    # log detalhado por expectation
+    # detailed log per expectation
     for r in results.results:
         status   = "OK  " if r.success else "FAIL"
         exp_type = r.expectation_config.type
-        col      = r.expectation_config.kwargs.get("column", "(tabela)")
+        col      = r.expectation_config.kwargs.get("column", "(table)")
         logger.info("  [%s] %-50s  col=%-25s", status, exp_type, col)
 
-    # Falha explícita se configurado — comportamento de produção
+    # explicit failure if configured — production behavior
     if fail_on_error and not success:
         raise RuntimeError(
-            f"Qualidade de dados REPROVADA: {failed}/{total} checks falharam.\n"
-            "Revise o quality.yaml ou investigue os dados de entrada.\n"
-            "Para continuar mesmo com falhas, ajuste fail_pipeline_on_error: false"
+            f"Data quality FAILED: {failed}/{total} checks failed.\n"
+            "Review quality.yaml or inspect the input data.\n"
+            "To continue despite failures, set fail_pipeline_on_error: false"
         )
 
     return {
@@ -222,19 +222,19 @@ def save_quality_report(
     logging_config: dict[str, Any] | None = None,
 ) -> Path:
     """
-    Serializa o resumo de qualidade em JSON legível.
+    Serialize the quality summary to readable JSON.
 
-    Apenas o summary é serializado — o objeto results do GE não é
-    diretamente JSON-serializable. Informações de cada check são extraídas
-    e normalizadas aqui.
+    Only the summary is serialized — the GE results object is not
+    directly JSON-serializable. Information from each check is extracted
+    and normalized here.
 
     Args:
-        summary:        Retorno de run_quality_checks().
-        output_dir:     Diretório onde salvar o relatório.
-        logging_config: Seção 'logging' do pipeline.yaml.
+        summary:        Return value from run_quality_checks().
+        output_dir:     Directory where the report will be saved.
+        logging_config: 'logging' section from pipeline.yaml.
 
     Returns:
-        Path do arquivo JSON gerado.
+        Path to the generated JSON file.
     """
     logger = get_logger("quality", logging_config or {})
     output_dir = Path(output_dir)
@@ -245,11 +245,11 @@ def save_quality_report(
 
     details = []
     for r in summary["results"].results:
-        # Extrai kwargs sem a chave 'column' para não duplicar
+        # Extract kwargs without the 'column' key to avoid duplication
         raw_kwargs = dict(r.expectation_config.kwargs)
         column     = raw_kwargs.pop("column", None)
 
-        # result pode conter estatísticas observadas (ex.: % nulos, contagem)
+        # result can contain observed statistics (e.g.: % nulls, count)
         raw_result = r.result if isinstance(r.result, dict) else {}
 
         details.append({
@@ -272,5 +272,5 @@ def save_quality_report(
     with open(report_path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, ensure_ascii=False, default=str)
 
-    logger.info("Relatório de qualidade salvo: %s", report_path)
+    logger.info("Quality report saved: %s", report_path)
     return report_path

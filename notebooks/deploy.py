@@ -1,14 +1,14 @@
 # %%
-# Treina o modelo final (LightGBM sem DR, hiperparâmetros Optuna),
-# persiste o pipeline completo como artefato MLflow e registra no
-# MLflow Model Registry com versionamento automático.
+# Trains the final model (LightGBM without DR, Optuna hyperparameters),
+# persists the complete pipeline as an MLflow artifact, and registers it in
+# the MLflow Model Registry with automatic versioning.
 #
-# Fluxo:
-#   1. Treino no conjunto completo de treino (sem holdout)
-#   2. Avaliação final no holdout
-#   3. Log do pipeline serializado como artefato MLflow
-#   4. Registro no Model Registry → estágio "Staging"
-#   5. Promoção para "Production" se métricas atendem thresholds mínimos
+# Flow:
+#   1. Training on the full training set (without holdout)
+#   2. Final evaluation on holdout
+#   3. Log serialized pipeline as MLflow artifact
+#   4. Register in Model Registry → stage "Staging"
+#   5. Promote to "Production" if metrics meet minimum thresholds
 
 # %%
 import sys
@@ -48,15 +48,15 @@ warnings.filterwarnings('ignore')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Configuração
+# Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 SEED           = 42
 THRESHOLD      = 0.40
-MODEL_NAME     = 'bank-churn-lgbm'   # nome no MLflow Model Registry
+MODEL_NAME     = 'bank-churn-lgbm'   # name in MLflow Model Registry
 
-# thresholds mínimos para promoção automática Staging → Production
+# minimum thresholds for automatic promotion Staging → Production
 PROMOTE_MIN_AUC    = 0.85
 PROMOTE_MIN_RECALL = 0.70
 
@@ -95,7 +95,7 @@ client = MlflowClient()
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Carregar Dados
+# Load Data
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -118,11 +118,11 @@ X_train, X_holdout, y_train, y_holdout = train_test_split(
     random_state=SEED,
     stratify=y,
 )
-logger.info('Treino: %d | Holdout: %d | Features: %d', len(X_train), len(X_holdout), len(feat_cols))
+logger.info('Train: %d | Holdout: %d | Features: %d', len(X_train), len(X_holdout), len(feat_cols))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Construir e Treinar Pipeline Final
+# Build and Train Final Pipeline
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -147,16 +147,16 @@ def _build_final_pipeline() -> ImbPipeline:
 
 # %%
 logger.info('─' * 60)
-logger.info('Treinando pipeline final no conjunto de treino completo...')
+logger.info('Training final pipeline on the full training set...')
 t0       = time.time()
 pipeline = _build_final_pipeline()
 pipeline.fit(X_train, y_train)
 train_time = time.time() - t0
-logger.info('Treino concluído em %.1fs', train_time)
+logger.info('Training completed in %.1fs', train_time)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Avaliação no Holdout
+# Holdout Evaluation
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -180,18 +180,18 @@ logger.info('Holdout — AUC: %.4f | Recall: %.4f | F1: %.4f | Prec: %.4f',
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Persistir Modelo e Registrar no MLflow
+# Persist Model and Register in MLflow
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
-# Salva pipeline serializado localmente (para uso pela API sem MLflow)
+# Save serialized pipeline locally (for API use without MLflow)
 models_dir = ROOT_DIR / 'outputs' / 'models'
 models_dir.mkdir(parents=True, exist_ok=True)
 local_model_path = models_dir / 'pipeline_final.joblib'
 joblib.dump(pipeline, local_model_path)
-logger.info('Pipeline serializado em: %s', local_model_path)
+logger.info('Pipeline serialized at: %s', local_model_path)
 
-# Salva metadados de input (schema esperado)
+# Save input metadata (expected schema)
 schema = {
     'feature_columns': feat_cols,
     'target_column':   target_col,
@@ -203,7 +203,7 @@ schema_path = models_dir / 'model_schema.json'
 schema_path.write_text(json.dumps(schema, indent=2))
 
 # %%
-logger.info('Registrando no MLflow...')
+logger.info('Registering in MLflow...')
 with mlflow.start_run(run_name='deploy_final_model') as run:
     mlflow.set_tags({
         'model':   'lightgbm',
@@ -211,21 +211,21 @@ with mlflow.start_run(run_name='deploy_final_model') as run:
         'reducer': 'none',
     })
 
-    # Parâmetros
+    # Parameters
     mlflow.log_param('threshold',    THRESHOLD)
     mlflow.log_param('reducer',      'none')
     mlflow.log_param('n_features',   len(feat_cols))
     for k, v in BEST_LGBM_PARAMS.items():
         mlflow.log_param(f'lgbm_{k}', v)
 
-    # Métricas do holdout
+    # Holdout metrics
     mlflow.log_metrics(holdout_metrics)
 
-    # Artefatos
+    # Artifacts
     mlflow.log_artifact(str(local_model_path), artifact_path='model')
     mlflow.log_artifact(str(schema_path),      artifact_path='model')
 
-    # Registra pipeline completo como modelo MLflow (formato sklearn)
+    # Register full pipeline as MLflow model (sklearn format)
     mlflow.sklearn.log_model(
         sk_model       = pipeline,
         artifact_path  = 'pipeline',
@@ -238,21 +238,21 @@ with mlflow.start_run(run_name='deploy_final_model') as run:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Promoção Automática: Staging → Production
+# Automatic Promotion: Staging → Production
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 auc    = holdout_metrics['holdout_roc_auc']
 recall = holdout_metrics['holdout_recall']
 
-# Obtém a versão recém-registrada
+# Get the newly registered version
 versions = client.search_model_versions(f"name='{MODEL_NAME}'")
 latest   = sorted(versions, key=lambda v: int(v.version), reverse=True)[0]
 version  = latest.version
 
 logger.info('─' * 60)
-logger.info('Modelo registrado: %s v%s', MODEL_NAME, version)
-logger.info('AUC=%.4f (mín=%.2f) | Recall=%.4f (mín=%.2f)',
+logger.info('Registered model: %s v%s', MODEL_NAME, version)
+logger.info('AUC=%.4f (min=%.2f) | Recall=%.4f (min=%.2f)',
             auc, PROMOTE_MIN_AUC, recall, PROMOTE_MIN_RECALL)
 
 if auc >= PROMOTE_MIN_AUC and recall >= PROMOTE_MIN_RECALL:
@@ -262,7 +262,7 @@ if auc >= PROMOTE_MIN_AUC and recall >= PROMOTE_MIN_RECALL:
         stage   = 'Production',
         archive_existing_versions=True,
     )
-    logger.info('✓ Promovido para PRODUCTION (v%s)', version)
+    logger.info('✓ Promoted to PRODUCTION (v%s)', version)
     promotion_status = 'promoted_to_production'
 else:
     client.transition_model_version_stage(
@@ -270,17 +270,17 @@ else:
         version = version,
         stage   = 'Staging',
     )
-    logger.warning('⚠ Mantido em STAGING — métricas abaixo do mínimo')
+    logger.warning('⚠ Kept in STAGING — metrics below minimum threshold')
     promotion_status = 'kept_in_staging'
 
-# Atualiza tag do run com resultado da promoção
+# Update run tag with promotion result
 client.set_tag(run_id, 'promotion_status', promotion_status)
 client.set_tag(run_id, 'model_version',    version)
 
 # %%
 logger.info('─' * 60)
-logger.info('Deploy concluído.')
-logger.info('  Modelo  : %s v%s → %s', MODEL_NAME, version, promotion_status)
-logger.info('  Artefato: %s', local_model_path)
+logger.info('Deploy complete.')
+logger.info('  Model   : %s v%s → %s', MODEL_NAME, version, promotion_status)
+logger.info('  Artifact: %s', local_model_path)
 logger.info('  Schema  : %s', schema_path)
 logger.info('  Run ID  : %s', run_id)

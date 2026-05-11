@@ -1,409 +1,409 @@
-## Parte 1 — Estruturação do Projeto de Machine Learning
+## Part 1 — Structuring the Machine Learning Project
 
-### 1.1 Definição do Objetivo Técnico
+### 1.1 Technical Objective Definition
 
-O objetivo central deste projeto é construir um sistema de classificação binária capaz de identificar, com antecedência, clientes com alta probabilidade de encerrar seu relacionamento com o banco (*churn*), antes que sinais explícitos — como reclamações formais — se tornem disponíveis.
+The core objective of this project is to build a binary classification system capable of identifying in advance customers with a high probability of ending their relationship with the bank (churn), before explicit signals — such as formal complaints — become available.
 
-A variável-alvo é `Exited` (0 = cliente retido, 1 = cliente que saiu), com distribuição observada de 79,62% negativos e 20,38% positivos, caracterizando um problema de classes desbalanceadas com razão aproximada de 3,91:1.
+The target variable is `Exited` (0 = retained customer, 1 = churned customer), with an observed distribution of 79.62% negatives and 20.38% positives, characterizing a class imbalance problem with an approximate ratio of 3.91:1.
 
 
-### 1.2 Mapeamento dos Experimentos
+### 1.2 Experiment Mapping
 
-Cinco experimentos foram conduzidos na fase exploratória (projeto Scikit-Learn), variando arquitetura do modelo, presença da coluna `Complain` e estratégias de regularização e otimização de hiperparâmetros:
+Five experiments were conducted in the exploratory phase (Scikit-Learn project), varying model architecture, the presence of the `Complain` column, and regularization and hyperparameter optimization strategies:
 
-| Experimento | Modelo                               | Complain | Principais configurações                                                      | Resultado principal (teste)                        |
-|-------------|--------------------------------------|----------|-------------------------------------------------------------------------------|----------------------------------------------------|
-| E1          | Perceptron                           | Sim      | StandardScaler, Yeo-Johnson em Balance, OHE em Geography/Gender               | Accuracy ≈ 1,00 — inflacionado por data leakage    |
-| E2          | Perceptron                           | Não      | Mesmas transformações; Complain removida                                      | Accuracy ≈ 0,76; F1 classe churn = 0,36            |
-| E3          | Árvore de Decisão sem regularização  | Não      | Parâmetros padrão do DecisionTreeClassifier; sem restrição de profundidade    | Accuracy treino 1,00 vs. teste 0,80 — overfitting severo (profundidade 26, 928 folhas) |
-| E4          | Árvore de Decisão com regularização  | Não      | Grid Search + StratifiedKFold (10 folds); critério gini, `max_depth = 5`      | Accuracy treino e teste ≈ 0,86; 30 folhas; precisão média CV = 0,7696 (IC 95%: [0,7267–0,8126]) |
-| E5          | Random Forest (ensemble)             | Não      | Grid Search; `n_estimators = 100`, `max_depth = 5`, `min_samples_split = 5`, `min_samples_leaf = 1` | Accuracy treino e teste ≈ 0,86; F1 classe churn = 0,51; sem overfitting |
+| Experiment | Model                                | Complain | Main configurations                                                      | Main result (test)                                 |
+|------------|--------------------------------------|----------|---------------------------------------------------------------------------|----------------------------------------------------|
+| E1         | Perceptron                           | Yes      | StandardScaler, Yeo-Johnson on Balance, OHE on Geography/Gender           | Accuracy ≈ 1.00 — inflated by data leakage         |
+| E2         | Perceptron                           | No       | Same transformations; `Complain` removed                                 | Accuracy ≈ 0.76; churn class F1 = 0.36             |
+| E3         | Decision Tree without regularization | No       | Default `DecisionTreeClassifier` hyperparameters; no depth restriction   | Training accuracy 1.00 vs. test 0.80 — severe overfitting (depth 26, 928 leaves) |
+| E4         | Regularized Decision Tree            | No       | Grid Search + StratifiedKFold (10 folds); gini criterion, `max_depth = 5` | Training and test accuracy ≈ 0.86; 30 leaves; mean CV accuracy = 0.7696 (95% CI: [0.7267–0.8126]) |
+| E5         | Random Forest (ensemble)             | No       | Grid Search; `n_estimators = 100`, `max_depth = 5`, `min_samples_split = 5`, `min_samples_leaf = 1` | Training and test accuracy ≈ 0.86; churn class F1 = 0.51; no overfitting |
 
-**E1 — Perceptron com Complain:** serviu como controle negativo. A accuracy próxima de 1,00 — incomum para um classificador linear simples — evidenciou que o modelo estava aprendendo a correlação quase perfeita entre `Complain` e `Exited` (Pearson = 0,9957), e não padrões genuínos de comportamento do cliente.
+**E1 — Perceptron with Complain:** served as a negative control. Accuracy near 1.00 — unusual for a simple linear classifier — showed the model was learning the nearly perfect correlation between `Complain` and `Exited` (Pearson = 0.9957), not genuine customer behavior patterns.
 
-**E2 — Perceptron sem Complain:** ao remover a variável contaminada, o desempenho caiu significativamente. A accuracy no conjunto de teste foi de 0,76, com F1-score de 0,36 para a classe churn — linha de base honesta que reflete a dificuldade real do problema.
+**E2 — Perceptron without Complain:** removing the contaminated variable caused performance to drop significantly. Test accuracy was 0.76, with an F1-score of 0.36 for the churn class — an honest baseline reflecting the true difficulty of the problem.
 
-**E3 — Árvore de Decisão sem regularização:** treinada com os parâmetros padrão do `DecisionTreeClassifier`, sem nenhuma restrição de profundidade ou número de folhas. A árvore atingiu profundidade 26 e 928 folhas, memorizando completamente os dados de treino (accuracy = 1,00) sem generalizar para o conjunto de teste (accuracy ≈ 0,80). Este experimento demonstrou empiricamente o risco de overfitting em árvores sem controle de complexidade.
+**E3 — Decision Tree without regularization:** trained with default `DecisionTreeClassifier` settings, without any depth or leaf restrictions. The tree reached depth 26 and 928 leaves, memorizing the training data completely (accuracy = 1.00) without generalizing to the test set (accuracy ≈ 0.80). This experiment empirically demonstrated the risk of overfitting in unconstrained trees.
 
-**E4 — Árvore de Decisão com regularização:** aplicação de Grid Search com validação cruzada estratificada de 10 folds para busca sistemática de hiperparâmetros. A melhor configuração encontrada utilizou critério gini e profundidade máxima de 5 níveis, resultando em apenas 30 folhas. A regularização por controle de profundidade eliminou o overfitting: treino e teste convergem para accuracy ≈ 0,86, com precisão média na validação cruzada de 0,7696 e coeficiente de variação de 9%.
+**E4 — Decision Tree with regularization:** applied Grid Search with 10-fold stratified cross-validation for systematic hyperparameter search. The best configuration used the gini criterion and a maximum depth of 5 levels, resulting in only 30 leaves. Depth regularization eliminated overfitting: training and test accuracy converged to ≈ 0.86, with mean CV accuracy of 0.7696 and a coefficient of variation of 9%.
 
-**E5 — Random Forest:** método ensemble que combina 100 árvores com profundidade máxima 5, treinadas sobre subamostras diferentes dos dados. A combinação das previsões reduz a variância em relação a uma árvore individual, mantendo accuracy ≈ 0,86 tanto em treino quanto em teste — sem sinais de overfitting. A análise de importância das features confirmou `Age` (0,385) e `NumOfProducts` (0,318) como variáveis mais influentes, alinhando-se com os achados da EDA. A limitação persistente foi o recall baixo da classe churn (0,36 no teste), indicando que o desbalanceamento de classes (3,91:1) não foi tratado nesta fase.
+**E5 — Random Forest:** an ensemble method combining 100 trees with maximum depth 5, trained on different data subsamples. Aggregating predictions reduces variance compared to a single tree while maintaining accuracy ≈ 0.86 in both training and test — with no signs of overfitting. Feature importance analysis confirmed `Age` (0.385) and `NumOfProducts` (0.318) as the most influential variables, aligning with EDA findings. The remaining limitation was low churn recall (0.36 on test), indicating that class imbalance (3.91:1) was not treated in this phase.
 
-### 1.3 Critérios de Sucesso
+### 1.3 Success Criteria
 
-A escolha das métricas parte de uma assimetria de custo de negócio: um falso negativo (cliente que vai sair e não foi identificado) tem custo maior do que um falso positivo (estratégia de retenção para um cliente que não vai sair). Favorecendo recall sobre precisão.
+The choice of metrics is based on a business cost asymmetry: a false negative (a customer who will churn and is not identified) has a higher cost than a false positive (a retention strategy applied to a customer who would not churn). This favors recall over precision.
 
-**Critérios quantitativos definidos:**
+**Quantitative criteria defined:**
 
-- **ROC-AUC ≥ 0,85** — discriminação geral entre classes
-- **Recall (classe churn) ≥ 0,70** — detectar ao menos 70% dos churns reais
-- **F1-Score ≥ 0,60** — equilíbrio mínimo entre precisão e recall
-- **Threshold ajustado para 0,40** (padrão 0,50) — desloca a fronteira de decisão para maximizar recall da classe minoritária
+- **ROC-AUC ≥ 0.85** — overall class discrimination
+- **Recall (churn class) ≥ 0.70** — detect at least 70% of real churns
+- **F1-Score ≥ 0.60** — minimum balance between precision and recall
+- **Threshold adjusted to 0.40** (default 0.50) — shifts the decision boundary to maximize minority class recall
 
-**Métricas de negócio derivadas:**
+**Derived business metrics:**
 
-- Taxa de retenção incremental: clientes identificados corretamente e abordados com ação de retenção
-- Custo de intervenção por cliente abordado vs. receita preservada por cliente retido
+- Incremental retention rate: customers correctly identified and approached with retention action
+- Intervention cost per contacted customer vs. preserved revenue per retained customer
 
-### 1.4 Análise Exploratória — Principais Achados de Engenharia
+### 1.4 Exploratory Analysis — Main Engineering Findings
 
-A EDA identificou padrões que guiaram diretamente as decisões de feature engineering implementadas no pipeline:
+EDA identified patterns that directly guided feature engineering decisions implemented in the pipeline:
 
-**Variáveis com maior poder discriminante (confirmadas por testes estatísticos):**
+**Variables with the highest discriminative power (confirmed by statistical tests):**
 
-- `Age` — Cohen's d = 0,747; clientes que saíram têm média de 44,8 anos vs. 37,4 dos que ficaram
-- `IsActiveMember` — clientes inativos com churn 2,6× maior que ativos
-- `NumOfProducts` — relação não-linear: 3–4 produtos → churn de 82,7% a 100%
-- `Balance` — distribuição bimodal; 36,17% com saldo zero (valor legítimo, não erro)
-- `Geography` — Germany com churn 2× maior (Cramér's V = 0,17)
-- `Gender` — mulheres com 25,1% de churn vs. 16,5% dos homens (Cramér's V = 0,11)
+- `Age` — Cohen's d = 0.747; churned customers average 44.8 years old vs. 37.4 for retained customers
+- `IsActiveMember` — inactive customers have churn 2.6× higher than active customers
+- `NumOfProducts` — non-linear relationship: 3–4 products → churn of 82.7% to 100%
+- `Balance` — bimodal distribution; 36.17% with zero balance (legitimate value, not error)
+- `Geography` — Germany with churn 2× higher (Cramér's V = 0.17)
+- `Gender` — women with 25.1% churn vs. 16.5% for men (Cramér's V = 0.11)
 
-**Variáveis sem associação linear significativa (p > 0,05):**
+**Variables without significant linear association (p > 0.05):**
 
-- `HasCrCard` (p = 0,485), `EstimatedSalary` (p = 0,211), `Satisfaction Score` (p = 0,559), `Point Earned` (p = 0,644) — mantidas no pipeline pois modelos não-lineares podem extrair valor via interações; SHAP values validarão antes de exclusão definitiva.
+- `HasCrCard` (p = 0.485), `EstimatedSalary` (p = 0.211), `Satisfaction Score` (p = 0.559), `Point Earned` (p = 0.644) — kept in the pipeline because non-linear models may extract value through interactions; SHAP values will validate before definitive exclusion.
 
 ---
 
-## Parte 2 — Fundação de Dados e Diagnóstico Inicial
+## Part 2 — Data Foundation and Initial Diagnosis
 
-### 2.1 Pipeline de Ingestão
+### 2.1 Ingestion Pipeline
 
-O pipeline de ingestão foi construído seguindo o princípio MLOps de separação entre política (configuração em YAML) e mecanismo (código Python genérico). O arquivo `config/data.yaml` controla todas as decisões de ingestão; o módulo `src/ingest.py` executa sem nenhuma lógica hardcoded.
+The ingestion pipeline was built following the MLOps principle of separating policy (YAML configuration) from mechanism (generic Python code). The file `config/data.yaml` controls all ingestion decisions; module `src/ingest.py` executes with no hardcoded logic.
 
-**Fluxo de dados:**
+**Data flow:**
 
 ```
-Kaggle API → CSV bruto → data/raw/
-           → validação de schema → blocos de 5.000 linhas
-           → conversão de tipos (convert_dtypes=True)
-           → data/processed/bank_churn.parquet (compressão Snappy)
+Kaggle API → raw CSV → data/raw/
+           → schema validation → 5,000-row blocks
+           → type conversion (convert_dtypes=True)
+           → data/processed/bank_churn.parquet (Snappy compression)
 ```
 
-A escolha do formato Parquet — em vez de CSV — reduz o tempo de leitura em leituras subsequentes, preserva os tipos de dados corretamente e comprime o arquivo em aproximadamente 60% do tamanho original. O tamanho de bloco de 5.000 linhas foi calibrado para acomodar datasets maiores (até 50.000 linhas) sem pressão de memória.
+Choosing Parquet instead of CSV reduces read time in subsequent loads, preserves data types correctly, and compresses the file to approximately 60% of the original size. The 5,000-row block size was calibrated to accommodate larger datasets (up to 50,000 rows) without memory pressure.
 
-A validação de schema verifica a presença obrigatória de todas as 18 colunas originais, lançando erro imediatamente se qualquer coluna estiver ausente — comportamento *fail-fast* que evita erros silenciosos no restante do pipeline.
+Schema validation checks for the mandatory presence of all 18 original columns, throwing an error immediately if any column is missing — fail-fast behavior that avoids silent errors in the rest of the pipeline.
 
-### 2.2 Diagnóstico de Qualidade (Great Expectations)
+### 2.2 Quality Diagnosis (Great Expectations)
 
-O módulo `src/quality_checks.py` executa validações configuradas em `config/quality.yaml`, seguindo o padrão Great Expectations com *expectations* de tabela e de coluna. Todos os parâmetros foram derivados dos dados reais (EDA Seção 9) usando percentis robustos (p01–p99) com tolerâncias de ±2σ.
+Module `src/quality_checks.py` performs validations configured in `config/quality.yaml`, following the Great Expectations pattern with table and column expectations. All parameters were derived from the actual data (EDA Section 9) using robust percentiles (p01–p99) with ±2σ tolerances.
 
-**Anomalias identificadas no dataset:**
+**Anomalies identified in the dataset:**
 
-**Outliers em `CreditScore`:** 15 casos com valores abaixo de 400, fora do range operacional de qualquer score de crédito convencional (350–850). Foram mantidos no dataset após investigação — a EDA confirmou que não afetam a distribuição global (std = 96,7).
+**Outliers in `CreditScore`:** 15 cases with values below 400, outside the operational range of any conventional credit score system (350–850). They were kept in the dataset after investigation — EDA confirmed they do not affect the global distribution (std = 96.7).
 
-**Distribuição bimodal em `Balance`:** 36,17% dos clientes possuem saldo exatamente zero. Isso representa um comportamento legítimo enqunanto existem clientes que usam o banco apenas para outros serviços.
+**Bimodal distribution in `Balance`:** 36.17% of customers have exactly zero balance. This represents legitimate behavior, since there are customers who use the bank solely for other services.
 
-**Concentração etária elevada em `Age`:** 359 clientes com idade acima de 60 anos, na cauda direita da distribuição assimétrica (skew = +1,01). Estes clientes coincidem com o grupo de maior taxa de churn, tornando-os relevantes para o modelo — não foram removidos como outliers.
+**High age concentration in `Age`:** 359 customers older than 60 years, in the right tail of the asymmetric distribution (skew = +1.01). These customers coincide with the group of highest churn rate, making them relevant for the model — they were not removed as outliers.
 
-**`NumOfProducts` com valor 4:** 60 clientes contrataram 4 produtos, categoria com churn de 100% na amostra. O range válido foi confirmado como 1–4; estes casos não são erros mas sim o sinal preditivo mais forte do dataset.
+**`NumOfProducts` equal to 4:** 60 customers contracted 4 products, a category with 100% churn in the sample. The valid range was confirmed as 1–4; these cases are not errors but rather the strongest predictive signal in the dataset.
 
-### 2.3 Inconsistências Estruturais do Dataset
+### 2.3 Structural Dataset Inconsistencies
 
-**Distribuição artificial de `Card Type`:** A coluna apresenta distribuição perfeitamente uniforme entre as quatro categorias (DIAMOND, GOLD, SILVER, PLATINUM), com χ² p = 0,168 e Cramér's V = 0,02 — evidência de dados sintéticos sem associação real com churn. Adicionalmente, `Card Type` contradiz `HasCrCard`: 1.151 clientes sem cartão de crédito (`HasCrCard = 0`) possuem um tipo de cartão atribuído — inconsistência estrutural que confirma a origem sintética. `Card Type` foi removida do pipeline.
+**Artificial distribution of `Card Type`:** The column shows a perfectly uniform distribution across the four categories (DIAMOND, GOLD, SILVER, PLATINUM), with χ² p = 0.168 and Cramér's V = 0.02 — evidence of synthetic data with no real association to churn. Additionally, `Card Type` contradicts `HasCrCard`: 1,151 customers without a credit card (`HasCrCard = 0`) have an assigned card type — a structural inconsistency that confirms synthetic origin. `Card Type` was removed from the pipeline.
 
-**Data leakage em `Complain`:** A correlação de Pearson de 0,9957 entre `Complain` e `Exited` indica que a reclamação formal foi registrada *após* ou *simultaneamente* ao churn, não antes. Em produção, esta informação não estaria disponível no momento da predição. A coluna foi excluída via `ColumnDropper` na primeira etapa do pipeline de pré-processamento, antes de qualquer transformação.
+**Data leakage in `Complain`:** The Pearson correlation of 0.9957 between `Complain` and `Exited` indicates the formal complaint was recorded after or simultaneously with churn, not before. In production, this information would not be available at prediction time. The column was excluded via `ColumnDropper` in the first preprocessing step, before any transformation.
 
-### 2.4 Desbalanceamento de Classes
+### 2.4 Class Imbalance
 
-A razão de 3,91:1 entre clientes retidos e churned exige tratamento explícito para evitar que o modelo aprenda a classificar tudo como negativo (acurácia aparente de 79,62% sem nenhum poder preditivo real). As estratégias de mitigação adotadas estão detalhadas na Seção 3.2.
+The 3.91:1 ratio between retained and churned customers requires explicit treatment to avoid the model learning to classify everything as negative (apparent accuracy of 79.62% with no real predictive power). Mitigation strategies are detailed in Section 3.2.
 
-### 2.5 Impacto na Generalização e Limitações Estruturais
+### 2.5 Impact on Generalization and Structural Limitations
 
-**Origem sintética dos dados:** O dataset foi gerado artificialmente para fins educacionais. Isso implica ausência de correlações espúrias reais presentes em dados de produção (sazonalidade, efeitos macroeconômicos, comportamento de coorte), distribuições perfeitamente uniformes em algumas colunas (`Card Type`, `Tenure`, `EstimatedSalary`) e ausência de ruído de coleta. Modelos treinados neste dataset tendem a superestimar performance quando comparados a datasets reais.
+**Synthetic data origin:** The dataset was artificially generated for educational purposes. This implies the absence of real-world spurious correlations present in production data (seasonality, macroeconomic effects, cohort behavior), perfectly uniform distributions in some columns (`Card Type`, `Tenure`, `EstimatedSalary`), and no collection noise. Models trained on this dataset tend to overestimate performance compared to real datasets.
 
-**Ausência de dimensão temporal:** O dataset é um corte transversal (*cross-section*), sem timestamps. Em produção, churn é um fenômeno temporal — a taxa de churn em dezembro pode ser diferente de março. O pipeline atual não implementa features temporais (rolling averages, time-since-last-transaction); esta é a principal limitação para generalização em ambiente real.
+**Lack of temporal dimension:** The dataset is a cross-section, without timestamps. In production, churn is a temporal phenomenon — the churn rate in December may differ from March. The current pipeline does not implement temporal features (rolling averages, time-since-last-transaction); this is the main limitation for generalization in a real environment.
 
-**Recomendação:** Para uso em produção, o pipeline deve ser re-calibrado com dados reais, incluindo monitoramento de *data drift* nas distribuições de entrada e *concept drift* na relação entre features e target.
-
----
-
-### 2.6 Transformações e Técnicas Aplicadas
-
-Esta seção descreve todas as transformações aplicadas ao longo do projeto, organizadas em duas camadas: **pré-processamento** (stateless — executado sobre o dataset completo, antes do split) e **modelagem** (stateful — executado apenas sobre os dados de treino, após o split).
-
-#### 2.6.1 Pré-processamento Stateless
-
-O pré-processamento stateless reúne todas as transformações que não aprendem parâmetros dos dados — ou seja, podem ser aplicadas com segurança sobre o dataset inteiro sem risco de data leakage. Cada transformação é controlada por `config/preprocessing.yaml` e implementada como um transformador Scikit-Learn (`BaseEstimator + TransformerMixin`) em `src/preprocessing.py`.
-
-#### Remoção de Colunas (`ColumnDropper`)
-
-As colunas `RowNumber`, `CustomerId`, `Surname` e `Complain` são removidas na primeira etapa do pipeline. As três primeiras não possuem valor preditivo — são apenas identificadores de registro. `Complain` é removida por data leakage severo (correlação de Pearson = 0,9957 com `Exited`): em produção, a reclamação formal não estaria disponível antes do churn ocorrer.
-
-#### Flags Binárias (`BinaryFlagTransformer`)
-
-Criação de duas novas colunas binárias derivadas de variáveis existentes, com base em padrões identificados na EDA:
-
-- **`HasZeroBalance`** (`Balance == 0`): sinaliza os 36,17% de clientes com saldo zero — grupo com comportamento distinto do restante.
-- **`HighRiskProducts`** (`NumOfProducts >= 3`): sinaliza clientes com 3 ou mais produtos, faixa em que o churn atinge 82,7% a 100%.
-
-#### Features de Interação (`InteractionFeatureTransformer`)
-
-Criação de features compostas que capturam sinais combinados identificados na EDA:
-
-- **`AgeInactivity`** = `Age × (1 − IsActiveMember)`: amplifica o sinal de desengajamento em clientes mais velhos. Como inatividade e idade avançada são os dois maiores preditores isolados de churn, sua combinação cria um preditor composto mais forte.
-- **`EngagementScore`** = `IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance`: score de engajamento no intervalo −1 a 3. Valores altos indicam clientes mais engajados e com menor risco de churn.
-
-#### Feature de Razão (`RatioFeatureTransformer`)
-
-- **`BalanceSalaryRatio`** = `Balance / (EstimatedSalary + 1)`: razão entre saldo e renda estimada. O `+1` no denominador protege contra divisão por zero. Clientes com saldo alto relativo ao salário são os mais disputados pela concorrência bancária e apresentam maior risco de churn.
-
-#### Discretização Etária (`AgeBinTransformer`)
-
-- **`AgeGroup`**: a variável contínua `Age` é discretizada em 5 faixas etárias ([< 30, 30–40, 40–50, 50–60, 60+]) e convertida para encoding ordinal (0 a 4). Captura a relação não-linear entre idade e churn identificada na EDA: clientes entre 40 e 60 anos concentram a maior propensão à saída.
-
-#### Encoding de Variáveis Categóricas (`CategoricalEncoder`)
-
-- **`Geography`** → One-Hot Encoding com prefixo `geo`, gerando `geo_France`, `geo_Germany` e `geo_Spain`. Cada país é tratado como preditor independente, preservando a diferença de churn 2× maior em Germany.
-- **`Gender`** → Binary encoding: Male = 0, Female = 1. Método compacto para variável binária.
-- **`Card Type`** → removida do pipeline MLOps (χ² p = 0,168, Cramér's V = 0,02 — sem associação com churn). No projeto Scikit-Learn havia sido codificada ordinalmente (Silver=0, Gold=1, Platinum=2, Diamond=3), mas a análise do Random Forest confirmou importância de 0,0021 — irrelevante.
-
-#### Seleção de Features (`FeatureSelector`)
-
-Etapa final do pré-processamento: seleciona o conjunto definitivo de 21 features mais a variável-alvo `Exited`, descartando colunas intermediárias e originais que foram substituídas por suas versões codificadas (ex: `Geography` e `Gender` originais são descartadas após o encoding).
+**Recommendation:** For production use, the pipeline should be recalibrated with real data, including monitoring for data drift in input distributions and concept drift in the relationship between features and the target.
 
 ---
 
-#### 2.6.2 Técnicas de Modelagem Stateful
+### 2.6 Applied Transformations and Techniques
 
-As técnicas stateful aprendem parâmetros a partir dos dados de treino e só podem ser aplicadas após o split treino/teste. Aplicá-las antes causaria data leakage.
+This section describes all the transformations applied throughout the project, organized into two layers: **preprocessing** (stateless — executed over the full dataset before the split) and **modeling** (stateful — executed only on training data after the split).
 
-#### Imputação de Dados Ausentes (`DataImputer`)
+#### 2.6.1 Stateless Preprocessing
 
-Estratégias definidas por coluna para tratar valores nulos que possam surgir em produção:
+Stateless preprocessing gathers all transformations that do not learn parameters from the data — meaning they can be safely applied to the full dataset without risk of data leakage. Each transformation is controlled by `config/preprocessing.yaml` and implemented as a Scikit-Learn transformer (`BaseEstimator + TransformerMixin`) in `src/preprocessing.py`.
 
-| Coluna            | Estratégia              | Justificativa                                                  |
-|-------------------|-------------------------|----------------------------------------------------------------|
-| `CreditScore`     | Mediana por Geography   | Score de crédito varia por região geográfica                   |
-| `Age`             | Mediana global (37)     | Distribuição assimétrica — mediana mais robusta que média      |
-| `Balance`         | Constante zero          | 36% dos clientes têm saldo zero — valor legítimo               |
-| `EstimatedSalary` | Mediana global (100.194)| Distribuição uniforme                                          |
-| `NumOfProducts`   | Moda (1)                | Valor mais comum                                               |
-| `Tenure`          | Mediana global (5)      | Distribuição uniforme                                          |
-| `Geography`       | Moda                    | Valor mais frequente                                           |
-| `Gender`          | Moda                    | Valor mais frequente                                           |
+#### Column Removal (`ColumnDropper`)
 
-#### Escalonamento (`StandardScaler` e `RobustScaler`)
+The columns `RowNumber`, `CustomerId`, `Surname`, and `Complain` are removed in the first pipeline stage. The first three have no predictive value — they are only record identifiers. `Complain` is removed due to severe data leakage (Pearson correlation = 0.9957 with `Exited`): in production, the formal complaint would not be available before churn occurs.
 
-O escalonamento é aplicado **somente dentro do pipeline de modelagem, após o split treino/teste**, e **exclusivamente para a Regressão Logística**. Random Forest e XGBoost são baseados em árvore — fazem divisões binárias nos dados e são invariantes à escala das features. Aplicar escalonamento antes do split causaria data leakage: os parâmetros (média, mediana, IQR) seriam calculados sobre o dataset inteiro, incluindo os dados de teste.
+#### Binary Flags (`BinaryFlagTransformer`)
 
-A EDA recomendou técnicas diferentes por coluna com base na distribuição de cada variável (Seção 8.1):
+Creation of two new binary columns derived from existing variables, based on patterns identified in the EDA:
 
-| Variável | Técnica | Justificativa EDA |
-|----------|---------|-------------------|
-| `CreditScore` | `StandardScaler` | Distribuição quase normal (skew = −0,07), sem outliers extremos |
-| `EstimatedSalary` | `StandardScaler` | Distribuição uniforme, sem outliers |
-| `Point Earned` | `StandardScaler` | Distribuição uniforme, sem outliers |
-| `Satisfaction Score` | `StandardScaler` | Discreta 1–5, sem outliers |
-| `Age` | `RobustScaler` + log transform | Assimétrica (skew = +1,01), outliers válidos de clientes idosos |
-| `Balance` | `RobustScaler` | Bimodal com 36% de zeros — média e std seriam distorcidos |
+- **`HasZeroBalance`** (`Balance == 0`): flags the 36.17% of customers with zero balance — a group with behavior distinct from the rest.
+- **`HighRiskProducts`** (`NumOfProducts >= 3`): flags customers with 3 or more products, a range in which churn reaches 82.7% to 100%.
 
-**Por que `RobustScaler` para `Age` e `Balance`?**
+#### Interaction Features (`InteractionFeatureTransformer`)
 
-O `StandardScaler` calcula média e desvio padrão, que são sensíveis a outliers e distribuições assimétricas. O `RobustScaler` usa **mediana e IQR** (intervalo interquartil = Q75 − Q25), que são estatísticas resistentes a valores extremos. Para `Age`, a cauda longa de clientes idosos distorceria o desvio padrão; para `Balance`, a concentração de zeros distorceria a média.
+Creation of composite features that capture combined signals identified in the EDA:
 
-**Log transform em `Age`:**
+- **`AgeInactivity`** = `Age × (1 − IsActiveMember)`: amplifies the disengagement signal in older customers. Since inactivity and advanced age are the two strongest isolated churn predictors, their combination creates a stronger composite predictor.
+- **`EngagementScore`** = `IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance`: an engagement score in the range −1 to 3. High values indicate more engaged customers with lower churn risk.
 
-Antes do `RobustScaler`, aplica-se `np.log1p(Age)` — transformação logarítmica que comprime a cauda direita e aproxima a distribuição da normalidade.
+#### Ratio Feature (`RatioFeatureTransformer`)
 
-**Variáveis não escalonadas** (binárias, ordinais e encodings — já em escala reduzida por natureza): `HasCrCard`, `IsActiveMember`, `HasZeroBalance`, `HighRiskProducts`, `AgeGroup`, `NumOfProducts`, `Tenure`, `AgeInactivity`, `EngagementScore`, `BalanceSalaryRatio`, `geo_France`, `geo_Germany`, `geo_Spain`, `Gender_encoded`.
+- **`BalanceSalaryRatio`** = `Balance / (EstimatedSalary + 1)`: ratio between balance and estimated salary. The `+1` in the denominator protects against division by zero. Customers with a high balance relative to salary are most targeted by banking competitors and present higher churn risk.
 
-O pipeline completo — imputer + scalers + modelo — é registrado como um único artefato no MLflow, garantindo que em produção o escalonamento seja aplicado automaticamente sem etapas manuais separadas.
+#### Age Discretization (`AgeBinTransformer`)
 
-#### Transformação Yeo-Johnson (`Balance`) — projeto anterior
+- **`AgeGroup`**: the continuous variable `Age` is discretized into 5 age bands ([< 30, 30–40, 40–50, 50–60, 60+]) and converted to ordinal encoding (0 to 4). This captures the non-linear relationship between age and churn identified in the EDA: customers between 40 and 60 years old concentrate the highest propensity to leave.
 
-Aplicada no projeto Scikit-Learn em complemento ao StandardScaler para tratar a assimetria de `Balance`. No pipeline MLOps atual foi substituída por duas abordagens mais adequadas: a flag `HasZeroBalance` (stateless, no pré-processamento) e o `RobustScaler` (stateful, no pipeline de modelagem da Regressão Logística).
+#### Categorical Encoding (`CategoricalEncoder`)
 
-#### Tratamento de Desbalanceamento de Classes
+- **`Geography`** → One-Hot Encoding with prefix `geo`, generating `geo_France`, `geo_Germany`, and `geo_Spain`. Each country is treated as an independent predictor, preserving the 2× higher churn difference in Germany.
+- **`Gender`** → Binary encoding: Male = 0, Female = 1. A compact method for a binary variable.
+- **`Card Type`** → removed from the MLOps pipeline (χ² p = 0.168, Cramér's V = 0.02 — no association with churn). In the Scikit-Learn project it had been ordinally encoded (Silver=0, Gold=1, Platinum=2, Diamond=3), but Random Forest analysis confirmed importance = 0.0021 — irrelevant.
 
-Três estratégias configuradas para lidar com a razão de 3,91:1 entre classes:
+#### Feature Selection (`FeatureSelector`)
 
-- **`scale_pos_weight = 3,91`**: parâmetro nativo do XGBoost e LightGBM que atribui peso maior aos erros na classe churn durante o treinamento. Sem custo computacional adicional.
-- **SMOTE** (`k_neighbors = 5`): gera amostras sintéticas da classe minoritária interpolando entre exemplos reais de churn. Aplicado exclusivamente nos dados de treino, após o split.
-- **Ajuste de threshold para 0,40**: reduz o limiar de decisão de 0,50 para 0,40, fazendo o modelo classificar como churn casos com probabilidade acima de 40%. Aumenta o recall da classe churn ao custo de mais falsos positivos — tradeoff justificado pela assimetria de custos do negócio.
-
-#### Otimização de Hiperparâmetros (Grid Search + Validação Cruzada)
-
-Busca sistemática de hiperparâmetros avaliando todas as combinações de um grid pré-definido. Combinada com `StratifiedKFold` de 10 folds, que garante que cada subconjunto de validação mantém a proporção original de classes (80/20). Aplicada nos experimentos E4 e E5:
-
-- **E4 (Árvore de Decisão):** grid sobre `criterion` (gini, entropy) e `max_depth` (3, 5, 7, 10). Melhor configuração: gini + max_depth = 5.
-- **E5 (Random Forest):** grid sobre `n_estimators`, `max_depth`, `min_samples_split` e `min_samples_leaf`. Melhor configuração: 100 árvores, max_depth = 5, min_samples_split = 5, min_samples_leaf = 1.
+Final preprocessing stage: selects the definitive set of 21 features plus the target variable `Exited`, discarding intermediate and original columns that were replaced by their encoded versions (e.g., original `Geography` and `Gender` are discarded after encoding).
 
 ---
 
-## Parte 3 — Experimentação Sistemática de Modelos
+#### 2.6.2 Stateful Modeling Techniques
 
-### 3.1 Abordagem Experimental
+Stateful techniques learn parameters from the training data and can only be applied after the train/test split. Applying them before would cause data leakage.
 
-Os experimentos do projeto anterior (E1–E5) estabeleceram uma linha de base com accuracy de 0,86 e F1 churn de 0,51 (Random Forest, sem tratamento de desbalanceamento). Esta fase amplia a experimentação com quatro candidatos, tratamento explícito do desbalanceamento via SMOTE e otimização bayesiana de hiperparâmetros com Optuna, com todos os experimentos rastreados no MLflow.
+#### Missing Data Imputation (`DataImputer`)
 
-**Modelos candidatos selecionados:**
+Column-specific strategies to handle null values that may appear in production:
 
-| Modelo | Paradigma | Justificativa |
-|--------|-----------|---------------|
-| `LogisticRegression` | Linear | Baseline interpretável; único que requer escalonamento |
-| `RandomForestClassifier` | Bagging | Já testado no projeto anterior (E5); referência de comparação |
-| `XGBClassifier` | Boosting depth-wise | Padrão da indústria; `scale_pos_weight=3.91` para desbalanceamento |
-| `LGBMClassifier` | Boosting leaf-wise | Crescimento diferente do XGBoost; `is_unbalance=True` nativo |
+| Column            | Strategy               | Justification                                                  |
+|-------------------|------------------------|----------------------------------------------------------------|
+| `CreditScore`     | Median by Geography    | Credit score varies by geographic region                      |
+| `Age`             | Global median (37)     | Asymmetric distribution — median is more robust than mean      |
+| `Balance`         | Constant zero          | 36% of customers have zero balance — legitimate value          |
+| `EstimatedSalary` | Global median (100,194)| Uniform distribution                                           |
+| `NumOfProducts`   | Mode (1)               | Most common value                                              |
+| `Tenure`          | Global median (5)      | Uniform distribution                                           |
+| `Geography`       | Mode                   | Most frequent value                                            |
+| `Gender`          | Mode                   | Most frequent value                                            |
 
-**Critério de seleção:** ROC-AUC como métrica primária (robusta a desbalanceamento), complementada por F1 e Recall da classe churn.
+#### Scaling (`StandardScaler` and `RobustScaler`)
+
+Scaling is applied **only inside the modeling pipeline, after the train/test split**, and **exclusively for Logistic Regression**. Random Forest and XGBoost are tree-based — they perform binary splits on the data and are invariant to feature scale. Applying scaling before the split would cause data leakage: the parameters (mean, median, IQR) would be calculated on the entire dataset, including the test data.
+
+EDA recommended different techniques by column based on each variable's distribution (Section 8.1):
+
+| Variable | Technique | EDA justification |
+|----------|-----------|-------------------|
+| `CreditScore` | `StandardScaler` | Nearly normal distribution (skew = −0.07), without extreme outliers |
+| `EstimatedSalary` | `StandardScaler` | Uniform distribution, without outliers |
+| `Point Earned` | `StandardScaler` | Uniform distribution, without outliers |
+| `Satisfaction Score` | `StandardScaler` | Discrete 1–5, without outliers |
+| `Age` | `RobustScaler` + log transform | Asymmetric (skew = +1.01), valid outliers from elderly customers |
+| `Balance` | `RobustScaler` | Bimodal with 36% zeros — mean and std would be distorted |
+
+**Why `RobustScaler` for `Age` and `Balance`?**
+
+`StandardScaler` computes mean and standard deviation, which are sensitive to outliers and asymmetric distributions. `RobustScaler` uses **median and IQR** (interquartile range = Q75 − Q25), which are robust statistics against extreme values. For `Age`, the long tail of older customers would distort the standard deviation; for `Balance`, the concentration of zeros would distort the mean.
+
+**Log transform on `Age`:**
+
+Before `RobustScaler`, apply `np.log1p(Age)` — a logarithmic transformation that compresses the right tail and brings the distribution closer to normality.
+
+**Non-scaled variables** (binary, ordinal, and encodings — already on a reduced scale by nature): `HasCrCard`, `IsActiveMember`, `HasZeroBalance`, `HighRiskProducts`, `AgeGroup`, `NumOfProducts`, `Tenure`, `AgeInactivity`, `EngagementScore`, `BalanceSalaryRatio`, `geo_France`, `geo_Germany`, `geo_Spain`, `Gender_encoded`.
+
+The complete pipeline — imputer + scalers + model — is registered as a single artifact in MLflow, ensuring that in production scaling is applied automatically without separate manual steps.
+
+#### Yeo-Johnson Transformation (`Balance`) — previous project
+
+Applied in the Scikit-Learn project in addition to StandardScaler to handle the skewness of `Balance`. In the current MLOps pipeline it was replaced by two more suitable approaches: the `HasZeroBalance` flag (stateless, in preprocessing) and `RobustScaler` (stateful, in the Logistic Regression modeling pipeline).
+
+#### Class Imbalance Treatment
+
+Three strategies were configured to handle the 3.91:1 class ratio:
+
+- **`scale_pos_weight = 3.91`**: native parameter in XGBoost and LightGBM that assigns higher weight to churn class errors during training. No additional computational cost.
+- **SMOTE** (`k_neighbors = 5`): generates synthetic minority class samples by interpolating between real churn examples. Applied only to training data after the split.
+- **Threshold adjustment to 0.40**: lowers the decision threshold from 0.50 to 0.40, making the model classify as churn cases with probability above 40%. Increases churn recall at the cost of more false positives — a trade-off justified by the business cost asymmetry.
+
+#### Hyperparameter Optimization (Grid Search + Cross-Validation)
+
+A systematic hyperparameter search evaluating all combinations of a predefined grid. Combined with 10-fold `StratifiedKFold`, which ensures each validation subset maintains the original class proportion (80/20). Applied in experiments E4 and E5:
+
+- **E4 (Decision Tree):** grid over `criterion` (gini, entropy) and `max_depth` (3, 5, 7, 10). Best configuration: gini + max_depth = 5.
+- **E5 (Random Forest):** grid over `n_estimators`, `max_depth`, `min_samples_split`, and `min_samples_leaf`. Best configuration: 100 trees, max_depth = 5, min_samples_split = 5, min_samples_leaf = 1.
 
 ---
 
-### 3.2 Pipeline End-to-End (scikit-learn + imbalanced-learn)
+## Part 3 — Systematic Model Experimentation
 
-O pipeline foi construído com `imblearn.Pipeline`, garantindo que cada transformação stateful seja ajustada exclusivamente nos dados de treino de cada fold de CV — sem data leakage:
+### 3.1 Experimental Approach
+
+The experiments from the previous project (E1–E5) established a baseline with 0.86 accuracy and 0.51 churn F1 (Random Forest, without imbalance treatment). This phase expands experimentation with four candidates, explicit imbalance treatment via SMOTE, and Bayesian hyperparameter optimization with Optuna, with all experiments tracked in MLflow.
+
+**Selected candidate models:**
+
+| Model | Paradigm | Justification |
+|-------|----------|---------------|
+| `LogisticRegression` | Linear | Interpretable baseline; the only one requiring scaling |
+| `RandomForestClassifier` | Bagging | Already tested in the previous project (E5); comparison benchmark |
+| `XGBClassifier` | Depth-wise boosting | Industry standard; `scale_pos_weight=3.91` for imbalance |
+| `LGBMClassifier` | Leaf-wise boosting | Different growth strategy than XGBoost; native `is_unbalance=True` |
+
+**Selection criterion:** ROC-AUC as the primary metric (robust to imbalance), complemented by F1 and churn recall.
+
+---
+
+### 3.2 End-to-End Pipeline (scikit-learn + imbalanced-learn)
+
+The pipeline was built with `imblearn.Pipeline`, ensuring each stateful transformation is fit exclusively on training data in each CV fold — without data leakage:
 
 ```
-DataImputer → (StandardScaler + RobustScaler¹) → FeatureReducer → SMOTE → Estimador
+DataImputer → (StandardScaler + RobustScaler¹) → FeatureReducer → SMOTE → Estimator
 ```
 
-¹ Escalonamento aplicado apenas à Regressão Logística. Random Forest, XGBoost e LightGBM são invariantes à escala das features (baseados em divisões binárias).
+¹ Scaling applied only to Logistic Regression. Random Forest, XGBoost, and LightGBM are scale invariant (based on binary splits).
 
-**Componentes do pipeline:**
+**Pipeline components:**
 
-- **`DataImputer`**: imputa valores ausentes por coluna — mediana por grupo (`CreditScore` por `Geography`), constante zero (`Balance`), mediana global (`Age`, `Tenure`, `EstimatedSalary`) e moda (`NumOfProducts`).
-- **`StandardScalerTransformer`**: z-score em `CreditScore`, `EstimatedSalary`, `Point Earned`, `Satisfaction Score` (distribuições normais/uniformes).
-- **`RobustScalerTransformer`**: escalonamento por mediana/IQR em `Age` (skew=+1,01, com log1p prévio) e `Balance` (bimodal com 36% de zeros).
-- **`FeatureReducer`**: suporta `none | rfe | pca | kpca` — configurável via `modeling.yaml`.
-- **`SMOTE`**: oversampling sintético da classe minoritária (`k_neighbors=5`) aplicado apenas ao fold de treino.
-
----
-
-### 3.3 Validação Cruzada e Busca de Hiperparâmetros
-
-**Divisão dos dados:**
-- Holdout: 20% separado antes de qualquer treino (`stratify=True` — mantém proporção 20,4% churn)
-- CV: `StratifiedKFold` com 5 folds sobre o conjunto de treino (8.000 amostras)
-
-**Threshold ajustado:** 0,40 (padrão sklearn: 0,50). A redução favorece recall da classe churn.
-
-**Optuna — otimização bayesiana (TPE Sampler):**
-- 10 trials por modelo nesta execução (configurável em `modeling.yaml → optuna.default_trials`)
-- O Optuna co-otimiza simultaneamente os hiperparâmetros do estimador e o método de redução de dimensionalidade (`none | rfe | pca | kpca`)
-- Trials com combinações inválidas (ex: `penalty=l1` + `solver=lbfgs`) são ignorados automaticamente
+- **`DataImputer`**: imputes missing values per column — median by group (`CreditScore` by `Geography`), constant zero (`Balance`), global median (`Age`, `Tenure`, `EstimatedSalary`) and mode (`NumOfProducts`).
+- **`StandardScalerTransformer`**: z-score scaling on `CreditScore`, `EstimatedSalary`, `Point Earned`, `Satisfaction Score` (normal/uniform distributions).
+- **`RobustScalerTransformer`**: median/IQR scaling on `Age` (skew=+1.01, with prior log1p) and `Balance` (bimodal with 36% zeros).
+- **`FeatureReducer`**: supports `none | rfe | pca | kpca` — configurable via `modeling.yaml`.
+- **`SMOTE`**: synthetic minority class oversampling (`k_neighbors=5`) applied only to the training fold.
 
 ---
 
-### 3.4 Resultados Experimentais
+### 3.3 Cross-Validation and Hyperparameter Search
 
-#### Baseline — Parâmetros Padrão
+**Data split:**
+- Holdout: 20% separated before any training (`stratify=True` — preserves 20.4% churn proportion)
+- CV: `StratifiedKFold` with 5 folds on the training set (8,000 samples)
 
-| Modelo | ROC-AUC | ± std | F1 | Recall | Avg Precision |
-|--------|---------|-------|-----|--------|---------------|
-| LightGBM | **0,8499** | 0,0058 | 0,5937 | 0,5448 | 0,6784 |
-| XGBoost | 0,8465 | 0,0089 | 0,5730 | 0,7380 | 0,6700 |
-| Random Forest | 0,8456 | 0,0080 | 0,5971 | 0,5969 | 0,6464 |
-| Logistic Regression | 0,8252 | 0,0075 | 0,5761 | 0,6380 | 0,6304 |
+**Adjusted threshold:** 0.40 (sklearn default: 0.50). The reduction favors churn recall.
 
-#### Após Optuna (30 trials/modelo, 5-fold CV)
-
-| Modelo | ROC-AUC baseline | ROC-AUC otimizado | ± std | Melhora | F1 | Recall | Melhor configuração (seleção) |
-|--------|-----------------|-------------------|-------|---------|-----|--------|-------------------------------|
-| **LightGBM** | 0,8499 | **0,8623** | 0,0076 | +0,0124 | 0,5882 | 0,4877 | RFE (16 feat.), `n_est=528`, `num_leaves=30`, `lr=0,014` |
-| XGBoost | 0,8465 | 0,8591 | 0,0092 | +0,0126 | 0,5931 | 0,7693 | RFE (16 feat.), `n_est=164`, `max_depth=6`, `lr=0,023` |
-| Random Forest | 0,8456 | 0,8562 | 0,0071 | +0,0106 | 0,6100 | 0,6362 | PCA (18 comp.), `n_est=282`, `max_depth=9` |
-| Logistic Regression | 0,8252 | 0,8358 | 0,0088 | +0,0106 | 0,5703 | 0,7362 | PCA (18 comp.), `C=0,258`, `penalty=l1` |
-
-> **Observações sobre a busca de hiperparâmetros:**
-> - **Redução de dimensionalidade:** LightGBM e XGBoost convergiram para RFE com 16 features; Random Forest e Logistic Regression selecionaram PCA com 18 componentes. Isso sugere que os modelos de boosting se beneficiam mais da seleção explícita de features originais (interpretabilidade + remoção de ruído), enquanto os modelos lineares/baseados em árvores rasas aproveitam a compressão do espaço via PCA.
-> - **Trade-off recall × ROC-AUC:** XGBoost e Logistic Regression maximizaram recall (>0,73) mas com menor precisão; LightGBM maximizou ROC-AUC (0,8623) com recall mais conservador (0,49 em CV). No holdout, com threshold 0,40, o recall do LightGBM sobe para 0,61.
-> - **Tempo de otimização:** LightGBM ~2h, XGBoost ~3h, Random Forest ~1,4h, Logistic Regression ~5min.
-
-#### Avaliação no Holdout — Melhor Modelo (LightGBM)
-
-| Métrica | Valor |
-|---------|-------|
-| ROC-AUC | **0,8770** |
-| F1 (churn) | 0,6417 |
-| Recall (churn) | 0,6078 |
-| Precision (churn) | 0,6795 |
-| Avg Precision | 0,7312 |
-| Threshold | 0,40 |
-
-O holdout (ROC-AUC = 0,8770) superou a CV (0,8623 ± 0,0076), indicando boa generalização sem overfitting.
+**Optuna — Bayesian optimization (TPE Sampler):**
+- 10 trials per model in this run (configurable in `modeling.yaml → optuna.default_trials`)
+- Optuna co-optimizes estimator hyperparameters and the dimensionality reduction method (`none | rfe | pca | kpca`)
+- Invalid trials (e.g. `penalty=l1` + `solver=lbfgs`) are automatically ignored
 
 ---
 
-### 3.5 Análise Comparativa e Decisão Técnica
+### 3.4 Experimental Results
 
-**LightGBM foi selecionado como modelo principal** pelos seguintes critérios:
+#### Baseline — Default Parameters
 
-| Critério | LightGBM | XGBoost | Random Forest | Logistic Reg. |
-|----------|----------|---------|---------------|---------------|
-| ROC-AUC (holdout) | **0,8770** | — | — | — |
-| ROC-AUC (CV otimizado) | **0,8623** | 0,8591 | 0,8562 | 0,8358 |
-| Desempenho preditivo | ✓ Melhor | ✓ 2º | ✓ 3º | ✗ Mais baixo |
-| Custo computacional | ✓ Médio (~2h/30 trials) | ✗ Mais alto (~3h/30 trials) | ✓ Médio (~1,4h) | ✓ Muito baixo (~5min) |
-| Tratamento de desbalanceamento | ✓ Nativo (`is_unbalance`) | ✓ (`scale_pos_weight`) | ✓ (`class_weight`) | ✓ (`class_weight`) |
-| Interpretabilidade | ✓ `feature_importances_` + SHAP | ✓ idem | ✓ idem | ✓ Alta (coeficientes) |
+| Model | ROC-AUC | ± std | F1 | Recall | Avg Precision |
+|-------|---------|-------|-----|--------|---------------|
+| LightGBM | **0.8499** | 0.0058 | 0.5937 | 0.5448 | 0.6784 |
+| XGBoost | 0.8465 | 0.0089 | 0.5730 | 0.7380 | 0.6700 |
+| Random Forest | 0.8456 | 0.0080 | 0.5971 | 0.5969 | 0.6464 |
+| Logistic Regression | 0.8252 | 0.0075 | 0.5761 | 0.6380 | 0.6304 |
 
-**Comparação com projeto anterior (E5 — Random Forest sem SMOTE):**
-- F1 churn: 0,51 → **0,64** (+25% relativo)
-- ROC-AUC: não medido no E5 → **0,8770**
+#### After Optuna (30 trials/model, 5-fold CV)
 
-A melhora decorre principalmente de três mudanças: (1) SMOTE corrigindo o desbalanceamento, (2) feature engineering adicional (AgeInactivity, EngagementScore, BalanceSalaryRatio), e (3) otimização bayesiana de hiperparâmetros com Optuna (30 trials/modelo via TPE Sampler).
+| Model | Baseline ROC-AUC | Optimized ROC-AUC | ± std | Improvement | F1 | Recall | Best configuration (selection) |
+|-------|------------------|--------------------|-------|-------------|-----|--------|--------------------------------|
+| **LightGBM** | 0.8499 | **0.8623** | 0.0076 | +0.0124 | 0.5882 | 0.4877 | RFE (16 feat.), `n_est=528`, `num_leaves=30`, `lr=0.014` |
+| XGBoost | 0.8465 | 0.8591 | 0.0092 | +0.0126 | 0.5931 | 0.7693 | RFE (16 feat.), `n_est=164`, `max_depth=6`, `lr=0.023` |
+| Random Forest | 0.8456 | 0.8562 | 0.0071 | +0.0106 | 0.6100 | 0.6362 | PCA (18 comp.), `n_est=282`, `max_depth=9` |
+| Logistic Regression | 0.8252 | 0.8358 | 0.0088 | +0.0106 | 0.5703 | 0.7362 | PCA (18 comp.), `C=0.258`, `penalty=l1` |
 
----
+> **Notes on hyperparameter search:**
+> - **Dimensionality reduction:** LightGBM and XGBoost converged to RFE with 16 features; Random Forest and Logistic Regression selected PCA with 18 components. This suggests boosting models benefit more from explicit selection of original features (interpretability + noise removal), while linear/shallower tree models benefit from space compression via PCA.
+> - **Recall vs. ROC-AUC trade-off:** XGBoost and Logistic Regression maximized recall (>0.73) but with lower precision; LightGBM maximized ROC-AUC (0.8623) with more conservative recall (0.49 in CV). In the holdout set, with threshold 0.40, LightGBM recall increases to 0.61.
+> - **Optimization time:** LightGBM ~2h, XGBoost ~3h, Random Forest ~1.4h, Logistic Regression ~5min.
 
-### 3.6 Rastreamento com MLflow
+#### Holdout Evaluation — Best Model (LightGBM)
 
-Todos os experimentos foram registrados no MLflow com backend SQLite (`mlflow.db`), sob o experimento `bank-churn-classification`. Para cada modelo foram logados:
+| Metric | Value |
+|--------|-------|
+| ROC-AUC | **0.8770** |
+| F1 (churn) | 0.6417 |
+| Recall (churn) | 0.6078 |
+| Precision (churn) | 0.6795 |
+| Avg Precision | 0.7312 |
+| Threshold | 0.40 |
 
-- **Parâmetros**: hiperparâmetros padrão e otimizados, método de redução de dimensionalidade, threshold utilizado
-- **Métricas por fold**: `fold_roc_auc`, `fold_f1`, `fold_recall`, `fold_precision`, `fold_avg_precision`
-- **Métricas agregadas**: média e desvio padrão de cada métrica na CV
-- **Métricas do holdout**: avaliação final em dados nunca vistos durante a busca
-- **Artefatos**: curva ROC, curva Precision-Recall, matriz de confusão, análise de threshold, importância de features, comparação por fold, distribuição antes/após SMOTE
-- **Pipeline serializado**: pipeline completo (imputação + escalonamento + reducer + estimador) salvo como artefato MLflow, pronto para inferência
-
-
-## Parte 4 — Redução de Dimensionalidade
-
-### 4.1 Análise da Necessidade de Redução
-
-O dataset possui 20 features após o feature engineering da Parte 2. Para avaliar se redução de dimensionalidade é necessária, é preciso considerar três fatores:
-
-**Dimensionalidade:** 20 features é um espaço relativamente compacto. A "maldição da dimensionalidade" se manifesta tipicamente a partir de centenas de features. Com 10.000 amostras e 20 features, a razão amostras/dimensão é ~500:1 — muito acima do limiar problemático.
-
-**Resultados da Parte 3:** o Optuna testou quatro métodos de redução (`none`, `rfe`, `pca`, `kpca`) simultaneamente com os hiperparâmetros do modelo. O LightGBM selecionou RFE com 16 features — eliminando apenas 4 das 20 — o que indica que a maior parte das features é informativa e a redução agressiva não é necessária.
-
-**Conclusão preliminar:** não há necessidade técnica imperativa de redução de dimensionalidade neste dataset. O experimento desta parte serve para **quantificar o trade-off** entre compressão do espaço de features, desempenho preditivo e custo computacional.
+The holdout result (ROC-AUC = 0.8770) exceeded CV performance (0.8623 ± 0.0076), indicating good generalization without overfitting.
 
 ---
 
-### 4.2 Técnicas Escolhidas e Justificativas
+### 3.5 Comparative Analysis and Technical Decision
 
-Foram selecionadas **PCA** e **LDA** para o experimento controlado. t-SNE foi descartado como técnica de pipeline por razão técnica fundamental.
+**LightGBM was selected as the primary model** for the following reasons:
 
-**PCA — Principal Component Analysis (não-supervisionado)**
+| Criterion | LightGBM | XGBoost | Random Forest | Logistic Reg. |
+|-----------|----------|---------|---------------|---------------|
+| Holdout ROC-AUC | **0.8770** | — | — | — |
+| Optimized CV ROC-AUC | **0.8623** | 0.8591 | 0.8562 | 0.8358 |
+| Predictive performance | ✓ Best | ✓ 2nd | ✓ 3rd | ✗ Lowest |
+| Computational cost | ✓ Medium (~2h/30 trials) | ✗ Higher (~3h/30 trials) | ✓ Medium (~1.4h) | ✓ Very low (~5min) |
+| Imbalance handling | ✓ Native (`is_unbalance`) | ✓ (`scale_pos_weight`) | ✓ (`class_weight`) | ✓ (`class_weight`) |
+| Interpretability | ✓ `feature_importances_` + SHAP | ✓ same | ✓ same | ✓ High (coefficients) |
 
-Escolhida por ser a técnica de referência em redução de dimensionalidade: decomposição espectral da matriz de covariância que projeta os dados na direção de máxima variância. Vantagens para este contexto: implementação estável, produz componentes ordenados por variância explicada, e permite análise de quanto da informação original é preservada. Limitação: ignora completamente os rótulos da variável-alvo — maximiza variância dos dados, não separabilidade entre classes.
+**Comparison with the previous project (E5 — Random Forest without SMOTE):**
+- Churn F1: 0.51 → **0.64** (+25% relative)
+- ROC-AUC: not measured in E5 → **0.8770**
 
-Configuração: **18 componentes** (de 20 features), preservando >99% da variância — redução mínima, útil para isolar o efeito da transformação linear sem perda significativa de informação.
-
-**LDA — Linear Discriminant Analysis (supervisionado)**
-
-Escolhida como contraponto supervisionado ao PCA: em vez de maximizar variância, LDA encontra a projeção que **maximiza a separação entre classes**. Para classificação binária, o resultado é sempre **1 único componente** (n_classes − 1 = 1) — compressão máxima: de 20 features para 1 dimensão.
-
-Essa propriedade torna o LDA um experimento extremo: se um único discriminante linear capturar a separabilidade necessária, o modelo é altamente eficiente e interpretável. Se o desempenho cair significativamente, demonstra que a fronteira de decisão tem estrutura não-linear que 1 componente linear não captura.
-
-**Por que t-SNE foi descartado como técnica de pipeline:**
-
-t-SNE é um algoritmo de visualização não-paramétrico — ele não aprende uma transformação generalizável. Não existe `fit()` + `transform()` independentes para novos dados: cada execução otimiza uma embedding específica para o conjunto de entrada, sem capacidade de projetar amostras de teste. Por isso, **não pode ser integrado a um pipeline de inferência**. Seu uso neste projeto se limitaria à visualização exploratória dos dados (EDA), não ao treinamento de classificadores.
+The improvement stems mainly from three changes: (1) SMOTE correcting class imbalance, (2) additional feature engineering (AgeInactivity, EngagementScore, BalanceSalaryRatio), and (3) Bayesian hyperparameter optimization with Optuna (30 trials/model via TPE Sampler).
 
 ---
 
-### 4.3 Integração ao Pipeline e Configuração Experimental
+### 3.6 MLflow Tracking
 
-O experimento foi implementado em `notebooks/dimensionality_reduction.py`, reutilizando o componente `src/feature_reducer.py` — que foi estendido com suporte a LDA nesta fase.
+All experiments were logged in MLflow with a SQLite backend (`mlflow.db`), under the experiment `bank-churn-classification`. For each model, the following were logged:
 
-**Design do experimento controlado:**
+- **Parameters:** default and optimized hyperparameters, dimensionality reduction method, threshold used
+- **Per-fold metrics:** `fold_roc_auc`, `fold_f1`, `fold_recall`, `fold_precision`, `fold_avg_precision`
+- **Aggregated metrics:** mean and standard deviation of each CV metric
+- **Holdout metrics:** final evaluation on data never seen during the search
+- **Artifacts:** ROC curve, precision-recall curve, confusion matrix, threshold analysis, feature importance, fold comparison, distribution before/after SMOTE
+- **Serialized pipeline:** complete pipeline (imputation + scaling + reducer + estimator) saved as an MLflow artifact, ready for inference
 
-- **Variável independente:** técnica de redução (`none` | `PCA` | `LDA`)
-- **Variável controlada:** hiperparâmetros do LightGBM fixados nos valores ótimos da Parte 3 (`n_estimators=528`, `num_leaves=30`, `lr=0.0144`, etc.)
-- **Protocolo:** StratifiedKFold (5 folds), threshold=0.40, SMOTE ativado, seed=42
 
-**Pipeline por variante:**
+## Part 4 — Dimensionality Reduction
+
+### 4.1 Analysis of the Need for Reduction
+
+The dataset has 20 features after the feature engineering in Part 2. To assess whether dimensionality reduction is necessary, three factors must be considered:
+
+**Dimensionality:** 20 features is a relatively compact space. The "curse of dimensionality" typically appears with hundreds of features. With 10,000 samples and 20 features, the sample-to-dimension ratio is ~500:1 — well above the problematic threshold.
+
+**Part 3 results:** Optuna tested four reduction methods (`none`, `rfe`, `pca`, `kpca`) simultaneously with model hyperparameters. LightGBM selected RFE with 16 features — removing only 4 of 20 — which indicates that most features are informative and aggressive reduction is unnecessary.
+
+**Preliminary conclusion:** there is no technical imperative to apply dimensionality reduction to this dataset. This part's experiment serves to **quantify the trade-off** between feature space compression, predictive performance, and computational cost.
+
+---
+
+### 4.2 Selected Techniques and Justifications
+
+**PCA** and **LDA** were selected for the controlled experiment. t-SNE was discarded as a pipeline technique for a fundamental technical reason.
+
+**PCA — Principal Component Analysis (unsupervised)**
+
+Chosen because it is the reference technique in dimensionality reduction: spectral decomposition of the covariance matrix that projects the data in the direction of maximum variance. Advantages in this context: stable implementation, components ordered by explained variance, and the ability to analyze how much original information is preserved. Limitation: it completely ignores target labels — it maximizes data variance, not class separability.
+
+Configuration: **18 components** (out of 20 features), preserving >99% of the variance — a minimal reduction useful for isolating the effect of the linear transformation without significant information loss.
+
+**LDA — Linear Discriminant Analysis (supervised)**
+
+Chosen as a supervised counterpart to PCA: instead of maximizing variance, LDA finds the projection that **maximizes class separation**. For binary classification, the result is always **a single component** (n_classes − 1 = 1) — maximum compression: from 20 features to 1 dimension.
+
+This property makes LDA an extreme experiment: if a single linear discriminant captures the necessary separability, the model is highly efficient and interpretable. If performance drops significantly, it demonstrates that the decision boundary has a non-linear structure that one component cannot capture.
+
+**Why t-SNE was discarded as a pipeline technique:**
+
+t-SNE is a non-parametric visualization algorithm — it does not learn a generalizable transformation. There is no independent `fit()` + `transform()` for new data: each execution optimizes an embedding specific to the input dataset, with no ability to project test samples. Therefore, **it cannot be integrated into an inference pipeline**. Its use in this project would be limited to exploratory data visualization (EDA), not classifier training.
+
+---
+
+### 4.3 Pipeline Integration and Experimental Setup
+
+The experiment was implemented in `notebooks/dimensionality_reduction.py`, reusing the component `src/feature_reducer.py` — which was extended with LDA support in this phase.
+
+**Controlled experiment design:**
+
+- **Independent variable:** reduction technique (`none` | `PCA` | `LDA`)
+- **Controlled variable:** LightGBM hyperparameters fixed at the optimal values from Part 3 (`n_estimators=528`, `num_leaves=30`, `lr=0.0144`, etc.)
+- **Protocol:** StratifiedKFold (5 folds), threshold=0.40, SMOTE enabled, seed=42
+
+**Pipeline by variant:**
 
 ```
 none : DataImputer → FeatureReducer(none)   → SMOTE → LGBMClassifier
@@ -411,140 +411,140 @@ PCA  : DataImputer → StandardScaler → FeatureReducer(pca,  n=18) → SMOTE �
 LDA  : DataImputer → StandardScaler → FeatureReducer(lda,  n=1)  → SMOTE → LGBMClassifier
 ```
 
-StandardScaler foi adicionado antes de PCA e LDA porque ambos são sensíveis à escala absoluta das features (PCA confunde variância com magnitude; LDA maximiza razão de variâncias entre/intra-classes). O LightGBM na variante `none` não recebe scaler pois árvores são invariantes a escala monotônica.
+StandardScaler was added before PCA and LDA because both are sensitive to the absolute scale of features (PCA confuses variance with magnitude; LDA maximizes the ratio of between/intra-class variances). LightGBM in the `none` variant does not receive scaling because trees are invariant to monotonic scale.
 
 ---
 
-### 4.4 Resultados — Comparação com e sem Redução de Dimensionalidade
+### 4.4 Results — Comparison with and without Dimensionality Reduction
 
-Experimentos executados em `2026-04-20`, logados no MLflow com tag `stage=dr_comparison`.
+Experiments executed on `2026-04-20`, logged in MLflow with tag `stage=dr_comparison`.
 
-| Técnica DR | Features | CV ROC-AUC | ± std | CV F1 | CV Recall | Holdout ROC-AUC | Holdout F1 | Holdout Recall | Holdout Prec. | Tempo CV (s) |
-|------------|----------|-----------|-------|-------|-----------|-----------------|------------|----------------|---------------|-------------|
-| **Sem DR** | 20 | **0,8598** | 0,0088 | 0,5845 | **0,7791** | **0,8730** | **0,5973** | **0,8162** | 0,4710 | 6,5 |
-| PCA (18 comp.) | 18 | 0,8586 | 0,0071 | **0,5941** | 0,7675 | 0,8687 | 0,5875 | 0,7941 | 0,4662 | **5,0** |
-| LDA (1 comp.) | 1 | 0,8196 | 0,0107 | 0,5200 | 0,7951 | 0,8435 | 0,5340 | 0,8284 | 0,3939 | **4,8** |
+| DR technique | Features | CV ROC-AUC | ± std | CV F1 | CV Recall | Holdout ROC-AUC | Holdout F1 | Holdout Recall | Holdout Prec. | CV time (s) |
+|--------------|----------|-----------|-------|-------|-----------|-----------------|------------|----------------|---------------|-------------|
+| **No DR** | 20 | **0.8598** | 0.0088 | 0.5845 | **0.7791** | **0.8730** | **0.5973** | **0.8162** | 0.4710 | 6.5 |
+| PCA (18 comp.) | 18 | 0.8586 | 0.0071 | **0.5941** | 0.7675 | 0.8687 | 0.5875 | 0.7941 | 0.4662 | **5.0** |
+| LDA (1 comp.) | 1 | 0.8196 | 0.0107 | 0.5200 | 0.7951 | 0.8435 | 0.5340 | 0.8284 | 0.3939 | **4.8** |
 
-> **Nota sobre os resultados:** os valores acima diferem levemente dos resultados da Parte 3 porque o Optuna usou RFE(16) como redução — não "none". O experimento de DR usa os melhores params do Optuna mas com método de redução controlado, revelando o impacto isolado de cada técnica.
-
----
-
-### 4.5 Análise dos Trade-offs
-
-#### Impacto no Desempenho de Classificação
-
-**Sem DR vs PCA:** a diferença de ROC-AUC no holdout é mínima (0,8730 → 0,8687, −0,0043). PCA com 18 de 20 componentes preserva virtualmente toda a informação preditiva. A pequena queda decorre das 2 features descartadas e da transformação linear que mistura features interpretáveis em componentes abstratos. F1 do PCA é ligeiramente superior (0,5941 vs 0,5845 em CV) por reduzir marginalmente o ruído.
-
-**Sem DR vs LDA:** queda expressiva em ROC-AUC (0,8730 → 0,8435, −0,0295). Comprimir 20 features em 1 único componente linear é uma hipótese extremamente restritiva: assume que toda a informação discriminante está em uma única direção linear no espaço de features. O resultado mostra que essa hipótese não se sustenta — o problema tem estrutura de separação mais complexa que 1 componente captura. O recall do LDA no holdout (0,8284) supera os demais porque 1 componente tende a criar fronteiras de decisão mais "grossas", deslocando mais predições para a classe positiva.
-
-#### Custo Computacional
-
-| Fase | Sem DR | PCA | LDA |
-|------|--------|-----|-----|
-| Fit do redutor (CV) | — | ~0,01s/fold | ~0,005s/fold |
-| Treino LightGBM (CV) | ~1,3s/fold | ~1,0s/fold | ~0,9s/fold |
-| **Total CV (5 folds)** | **6,5s** | **5,0s** | **4,8s** |
-| Inferência (por amostra) | baseline | +transformação linear | +transformação linear |
-
-PCA e LDA reduzem o tempo de treino do LightGBM porque o modelo opera em espaço de menor dimensão. A economia é modesta aqui (20 → 18 ou 20 → 1 features) mas seria substancial com centenas de features. O overhead do próprio PCA/LDA é desprezível (<0,1s por fold).
-
-#### Interpretabilidade
-
-| Aspecto | Sem DR | PCA | LDA |
-|---------|--------|-----|-----|
-| Features originais visíveis no modelo | ✓ Sim | ✗ Não | ✗ Não |
-| Importância de features interpretável | ✓ Direto | ✗ Componentes abstratos | ✗ 1 eixo discriminante |
-| SHAP values interpretáveis | ✓ Sim | ✗ Requer back-projection | ✗ Limitado |
-| Explicabilidade para stakeholders | ✓ Alta | ✗ Baixa | ✗ Muito baixa |
-
-Sem DR, o LightGBM pode indicar "Age tem importância 0,38" de forma direta e acionável. Com PCA, o `pc_0` é uma combinação linear de todas as 20 features — interpretar qual variável de negócio está mais associada ao churn requer projetar os loadings de volta, adicionando complexidade. Com LDA, o único componente tem coeficientes que somam contribuições de todas as features para o eixo de separação de classes, mas o modelo final opera apenas nesse valor escalar — a conexão com variáveis de negócio é indireta.
+> **Note on results:** the values above differ slightly from Part 3 results because Optuna used RFE(16) as reduction — not `none`. The DR experiment uses the best Optuna parameters but with a controlled reduction method, revealing the isolated impact of each technique.
 
 ---
 
-### 4.6 Decisão Técnica — Redução de Dimensionalidade é Adequada?
+### 4.5 Trade-off Analysis
 
-**Conclusão: redução de dimensionalidade não é recomendada para este problema no estado atual.**
+#### Impact on Classification Performance
 
-Justificativas:
+**No DR vs PCA:** the holdout ROC-AUC difference is minimal (0.8730 → 0.8687, −0.0043). PCA with 18 of 20 components preserves virtually all predictive information. The small drop arises from the two discarded features and the linear transformation that mixes interpretable features into abstract components. PCA's F1 is slightly higher (0.5941 vs. 0.5845 in CV) because it marginally reduces noise.
 
-1. **Sem ganho preditivo relevante:** PCA com 18 componentes produz ROC-AUC 0,43 pontos percentuais menor no holdout — diferença negligenciável, dentro da margem de variação CV (±0,0088). LDA perde 2,95 pontos — queda relevante.
+**No DR vs LDA:** a pronounced ROC-AUC drop (0.8730 → 0.8435, −0.0295). Compressing 20 features into a single linear component is an extremely restrictive hypothesis: it assumes all discriminative information lies in one linear direction in feature space. The result shows this hypothesis does not hold — the problem has a separation structure more complex than one component can capture. The LDA holdout recall (0.8284) exceeds the others because one component tends to create thicker decision boundaries, pushing more predictions toward the positive class.
 
-2. **Recall é a métrica crítica de negócio:** o critério definido na Parte 1 é recall ≥ 0,70. Sem DR o holdout atinge recall 0,8162. Com PCA, 0,7941. Com LDA, 0,8284 (por razão espúria — menor precisão, não melhor discriminação). A configuração "Sem DR" entrega o melhor recall com boa precisão.
+#### Computational Cost
 
-3. **Custo de interpretabilidade é alto:** o banco precisa explicar decisões de retenção. Sem DR, features como `Age`, `NumOfProducts` e `IsActiveMember` têm importâncias diretas e acionáveis. PCA/LDA destroem essa rastreabilidade.
+| Stage | No DR | PCA | LDA |
+|-------|-------|-----|-----|
+| Reducer fit (CV) | — | ~0.01s/fold | ~0.005s/fold |
+| LightGBM train (CV) | ~1.3s/fold | ~1.0s/fold | ~0.9s/fold |
+| **Total CV (5 folds)** | **6.5s** | **5.0s** | **4.8s** |
+| Inference (per sample) | baseline | + linear transform | + linear transform |
 
-4. **20 features não é um problema de dimensionalidade:** redução seria valiosa a partir de ~100+ features altamente correlacionadas. Aqui, o feature engineering já produziu um conjunto compacto e informativo.
+PCA and LDA reduce LightGBM training time because the model operates in a lower-dimensional space. The savings are modest here (20 → 18 or 20 → 1 features) but would be substantial with hundreds of features. The PCA/LDA overhead is negligible (<0.1s per fold).
 
-**Exceção:** se o objetivo fosse visualização exploratória (análise de clusters de clientes, por exemplo), PCA com 2 componentes ou t-SNE seriam ferramentas valiosas — mas para fins de inferência e deploy, a versão sem redução é superior.
+#### Interpretability
 
----
+| Aspect | No DR | PCA | LDA |
+|--------|-------|-----|-----|
+| Original features visible in the model | ✓ Yes | ✗ No | ✗ No |
+| Interpretable feature importance | ✓ Direct | ✗ Abstract components | ✗ Single discriminant axis |
+| Interpretable SHAP values | ✓ Yes | ✗ Requires back-projection | ✗ Limited |
+| Explainability for stakeholders | ✓ High | ✗ Low | ✗ Very low |
 
-## Parte 5 — Seleção do Modelo Final
-
-### 5.1 Consolidação dos Experimentos
-
-A tabela abaixo reúne todos os experimentos avaliados no holdout ao longo das Partes 3 e 4. Apenas o LightGBM passou pela avaliação completa de holdout — foi selecionado na Parte 3 como o modelo com maior ROC-AUC em validação cruzada entre os quatro candidatos, e testado em múltiplas configurações de redução de dimensionalidade na Parte 4.
-
-| Experimento | Configuração | CV ROC-AUC | Holdout ROC-AUC | Holdout F1 | Holdout Recall | Holdout Prec. |
-|-------------|--------------|-----------|-----------------|------------|----------------|---------------|
-| P3 — Baseline | Parâmetros padrão, sem DR | 0,8499 ± 0,0058 | 0,8539 | 0,6103 | 0,5429 | 0,6965 |
-| P3 — Optuna | RFE(16), hiperparams otimizados | 0,8623 ± 0,0076 | 0,8770 | 0,6417 | 0,6078 | 0,6795 |
-| P4 — DR | Sem DR, hiperparams Optuna | 0,8598 ± 0,0088 | 0,8730 | 0,5973 | **0,8162** | 0,4710 |
-| P4 — DR | PCA(18), hiperparams Optuna | 0,8586 ± 0,0071 | 0,8687 | 0,5875 | 0,7941 | 0,4662 |
-| P4 — DR | LDA(1), hiperparams Optuna | 0,8196 ± 0,0107 | 0,8435 | 0,5340 | 0,8284 | 0,3939 |
+With no DR, LightGBM can directly indicate "Age has importance 0.38" in an actionable way. With PCA, `pc_0` is a linear combination of all 20 features — interpreting which business variable drives churn requires back-projecting the loadings, adding complexity. With LDA, the single component has coefficients that combine contributions from all features to the class separation axis, but the model ultimately operates on a single scalar value — the business connection is indirect.
 
 ---
 
-### 5.2 Por que o Optuna Escolheu RFE e Não "Sem DR"?
+### 4.6 Technical Decision — Is Dimensionality Reduction Appropriate?
 
-Esse é o ponto central para entender a seleção final.
+**Conclusion: dimensionality reduction is not recommended for this problem in its current state.**
 
-O Optuna **co-otimizou o método de DR e os hiperparâmetros do modelo simultaneamente** em 30 trials. Cada trial explorava uma combinação diferente dessas duas dimensões:
+Justifications:
+
+1. **No meaningful predictive gain:** PCA with 18 components yields a holdout ROC-AUC 0.43 percentage points lower — a negligible difference within CV variability (±0.0088). LDA loses 2.95 points — a relevant drop.
+
+2. **Recall is the business-critical metric:** the criterion defined in Part 1 is recall ≥ 0.70. No DR achieves holdout recall 0.8162. PCA yields 0.7941. LDA yields 0.8284 (for spurious reasons — lower precision, not better discrimination). The "No DR" configuration delivers the best recall with solid precision.
+
+3. **Interpretability cost is high:** the bank needs to explain retention decisions. With no DR, features such as `Age`, `NumOfProducts`, and `IsActiveMember` have direct, actionable importances. PCA/LDA destroy that traceability.
+
+4. **20 features is not a dimensionality problem:** reduction becomes valuable at ~100+ highly correlated features. Here, feature engineering already produced a compact and informative set.
+
+**Exception:** if the objective were exploratory visualization (customer cluster analysis, for example), PCA with 2 components or t-SNE would be valuable tools — but for inference and deployment, the no-DR version is superior.
+
+---
+
+## Part 5 — Final Model Selection
+
+### 5.1 Experiment Consolidation
+
+The table below aggregates all experiments evaluated on the holdout across Parts 3 and 4. Only LightGBM underwent full holdout evaluation — it was selected in Part 3 as the model with the highest CV ROC-AUC among the four candidates, and tested with multiple dimensionality reduction configurations in Part 4.
+
+| Experiment | Configuration | CV ROC-AUC | Holdout ROC-AUC | Holdout F1 | Holdout Recall | Holdout Prec. |
+|------------|---------------|------------|-----------------|------------|----------------|---------------|
+| P3 — Baseline | Default parameters, no DR | 0.8499 ± 0.0058 | 0.8539 | 0.6103 | 0.5429 | 0.6965 |
+| P3 — Optuna | RFE(16), optimized hyperparams | 0.8623 ± 0.0076 | 0.8770 | 0.6417 | 0.6078 | 0.6795 |
+| P4 — DR | No DR, Optuna hyperparams | 0.8598 ± 0.0088 | 0.8730 | 0.5973 | **0.8162** | 0.4710 |
+| P4 — DR | PCA(18), Optuna hyperparams | 0.8586 ± 0.0071 | 0.8687 | 0.5875 | 0.7941 | 0.4662 |
+| P4 — DR | LDA(1), Optuna hyperparams | 0.8196 ± 0.0107 | 0.8435 | 0.5340 | 0.8284 | 0.3939 |
+
+---
+
+### 5.2 Why Did Optuna Choose RFE and Not "No DR"?
+
+This is the key point for understanding the final selection.
+
+Optuna **co-optimized the DR method and model hyperparameters simultaneously** over 30 trials. Each trial explored a different combination of these two dimensions:
 
 ```
-Trial X:  RFE(16) + n_est=528 + num_leaves=30 + lr=0.014  →  CV AUC 0.8623  ← melhor trial
+Trial X:  RFE(16) + n_est=528 + num_leaves=30 + lr=0.014  →  CV AUC 0.8623  ← best trial
 Trial Y:  none    + n_est=300 + num_leaves=50 + lr=0.050  →  CV AUC 0.851
 Trial Z:  none    + n_est=150 + num_leaves=20 + lr=0.030  →  CV AUC 0.843
 ```
 
-O problema é que **nenhum trial testou `none` com os mesmos hiperparâmetros do melhor trial RFE**. O Optuna encontrou um ótimo local: a combinação RFE + aqueles hiperparâmetros específicos. Mas não explorou se esses mesmos hiperparâmetros, sem RFE, seriam equivalentes ou melhores — com apenas 30 trials em um espaço de busca grande, essa combinação simplesmente não foi amostrada.
+The issue is that **no trial tested `none` with the same hyperparameters as the best RFE trial**. Optuna found a local optimum: the combination RFE + those specific hyperparameters. But it did not explore whether those same hyperparameters, without RFE, would be equivalent or better — with only 30 trials in a large search space, that combination simply was not sampled.
 
-A Parte 4 fez exatamente esse experimento controlado: pegou os hiperparâmetros do melhor trial Optuna e testou `none`, `PCA` e `LDA`. O resultado revelou que **sem DR, com os mesmos hiperparâmetros, o AUC cai apenas 0,004 e o recall sobe 21 pontos percentuais**.
-
----
-
-### 5.3 Análise da Diferença de AUC
-
-A diferença de ROC-AUC entre as duas principais configurações:
-
-| Configuração | Holdout ROC-AUC | Diferença | CV std |
-|-------------|-----------------|-----------|--------|
-| Optuna + RFE(16) | 0,8770 | — | ±0,0076 |
-| Optuna + sem DR | 0,8730 | **−0,004** | ±0,0088 |
-
-A diferença de 0,004 é **menor que metade de um desvio padrão** da variação natural entre folds. Não há evidência estatística de que a configuração com RFE discrimine genuinamente melhor — a diferença está dentro do ruído esperado entre execuções.
-
-Em contrapartida, a diferença de recall é **21 pontos percentuais** (0,61 → 0,82) — essa sim está muito além do ruído e representa um efeito real e substancial.
+Part 4 performed exactly that controlled experiment: it took the best Optuna hyperparameters and tested `none`, `PCA`, and `LDA`. The result showed that **without DR, using the same hyperparameters, AUC drops by only 0.004 and recall increases by 21 percentage points**.
 
 ---
 
-### 5.4 Modelo Candidato à Operação
+### 5.3 AUC Difference Analysis
 
-**Modelo selecionado: LightGBM com hiperparâmetros Optuna, sem redução de dimensionalidade.**
+The ROC-AUC difference between the two main configurations:
 
-#### Justificativa da Seleção
+| Configuration | Holdout ROC-AUC | Difference | CV std |
+|---------------|-----------------|------------|--------|
+| Optuna + RFE(16) | 0.8770 | — | ±0.0076 |
+| Optuna + no DR | 0.8730 | **−0.004** | ±0.0088 |
 
-**1. AUC estatisticamente equivalente ao melhor encontrado:** a diferença de 0,004 em relação à configuração Optuna+RFE está dentro da variação natural do CV. As duas configurações têm capacidade discriminativa equivalente.
+The 0.004 difference is **less than half a standard deviation** of the natural fold variation. There is no statistical evidence that the RFE configuration truly discriminates better — the difference is within expected noise between runs.
 
-**2. Recall superior em 21 pontos percentuais:** 0,82 vs 0,61 no holdout. Para o problema de churn bancário — onde o custo de não identificar um cliente que vai sair (falso negativo) é permanente — essa diferença tem impacto direto no resultado de negócio. Em uma base de 10.000 clientes com 20% de churn, isso representa ~429 churners adicionais identificados a cada ciclo.
+In contrast, the recall difference is **21 percentage points** (0.61 → 0.82) — this is well beyond noise and represents a real, substantial effect.
 
-**3. O recall mais alto não é espúrio:** vem de um modelo com AUC equivalente, não de um modelo que simplesmente "chuta positivo para tudo". A precisão de 0,47 indica que o modelo ainda discrimina — captura 82% dos churners com 47% de precisão, operando em um ponto da curva ROC mais favorável ao recall.
+---
 
-**4. Pipeline mais simples e robusto:** sem RFE, o pipeline elimina um componente stateful que precisaria ser re-calibrado a cada re-treino e é sensível a mudanças no esquema de features. Menos peças que podem falhar em produção.
+### 5.4 Candidate Operational Model
 
-**5. Interpretabilidade total:** 20 features originais preservadas. Importâncias de features e SHAP values são diretamente rastreáveis a variáveis de negócio — essencial para explicar decisões de retenção para stakeholders.
+**Selected model: LightGBM with Optuna hyperparameters, no dimensionality reduction.**
 
-#### Especificação Técnica
+#### Selection rationale
+
+**1. Equivalent AUC to the best found model:** the 0.004 difference versus Optuna+RFE is within natural CV variation. Both configurations have equivalent discriminative capacity.
+
+**2. 21 percentage points higher recall:** 0.82 vs 0.61 on holdout. For bank churn — where the cost of missing a customer who will leave (false negative) is permanent — this difference has direct business impact. On a population of 10,000 customers with 20% churn, it represents ~429 additional churners identified per cycle.
+
+**3. The higher recall is not spurious:** it comes from a model with equivalent AUC, not from a model that simply “guesses positive for everything.” Precision of 0.47 indicates the model still discriminates — it captures 82% of churners with 47% precision, operating at a point on the ROC curve favorable to recall.
+
+**4. Simpler and more robust pipeline:** without RFE, the pipeline removes a stateful component that would need re-calibration each retrain and is sensitive to feature scheme changes. Fewer moving parts mean fewer points of failure in production.
+
+**5. Full interpretability:** 20 original features are preserved. Feature importances and SHAP values remain directly traceable to business variables — essential for explaining retention decisions to stakeholders.
+
+#### Technical specification
 
 ```python
 LGBMClassifier(
@@ -561,109 +561,109 @@ LGBMClassifier(
 )
 ```
 
-**Pipeline completo:**
+**Complete pipeline:**
 ```
 DataImputer → FeatureReducer(method='none') → SMOTE(k=5) → LGBMClassifier
 ```
 
-**Threshold de decisão:** 0,40
+**Decision threshold:** 0.40
 
-#### Desempenho Final
+#### Final performance
 
-| Métrica | Valor | Meta (Parte 1) | Status |
-|---------|-------|----------------|--------|
-| ROC-AUC (holdout) | 0,8730 | ≥ 0,85 | ✓ Atendida |
-| Recall classe churn (holdout) | 0,8162 | ≥ 0,70 | ✓ Atendida |
-| F1-score (holdout) | 0,5973 | ≥ 0,60 | ✗ −0,003 |
-| Threshold de decisão | 0,40 | — | Ajustado |
+| Metric | Value | Goal (Part 1) | Status |
+|--------|-------|---------------|--------|
+| ROC-AUC (holdout) | 0.8730 | ≥ 0.85 | ✓ Met |
+| Churn recall (holdout) | 0.8162 | ≥ 0.70 | ✓ Met |
+| F1-score (holdout) | 0.5973 | ≥ 0.60 | ✗ −0.003 |
+| Decision threshold | 0.40 | — | Adjusted |
 
-> **Nota sobre F1:** o F1 de 0,597 fica 0,003 abaixo da meta de 0,60 — diferença negligenciável. O valor reflete o threshold 0,40, que desloca o modelo para maior recall (0,82) e menor precisão (0,47). Com threshold 0,50 o F1 sobe para ~0,62, mas recall cai para ~0,55. A priorização do recall como critério de negócio principal justifica essa configuração.
+> **Note on F1:** the 0.597 F1 is 0.003 below the 0.60 goal — a negligible difference. It reflects the 0.40 threshold, which shifts the model toward higher recall (0.82) and lower precision (0.47). With threshold 0.50, F1 rises to ~0.62, but recall falls to ~0.55. Prioritizing recall as the primary business criterion justifies this configuration.
 
-#### Comparação com o Projeto Anterior (E5 — Random Forest sem SMOTE)
+#### Comparison with the previous project (E5 — Random Forest without SMOTE)
 
-| Métrica | E5 — Scikit-Learn | Modelo Final — MLOps | Evolução |
-|---------|------------------|----------------------|---------|
-| Recall churn | 0,36 | **0,82** | **+127%** |
-| F1 churn | 0,51 | 0,60 | +17,6% |
-| ROC-AUC | não medido | 0,8730 | — |
-| Tratamento de desbalanceamento | ✗ | ✓ SMOTE | — |
-| Otimização de hiperparâmetros | Grid Search manual | Optuna TPE 30 trials | — |
+| Metric | E5 — Scikit-Learn | Final Model — MLOps | Change |
+|--------|------------------|----------------------|--------|
+| Churn recall | 0.36 | **0.82** | **+127%** |
+| Churn F1 | 0.51 | 0.60 | +17.6% |
+| ROC-AUC | not measured | 0.8730 | — |
+| Imbalance treatment | ✗ | ✓ SMOTE | — |
+| Hyperparameter optimization | Manual Grid Search | Optuna TPE 30 trials | — |
 
-O salto de recall de 0,36 para 0,82 — mais que o dobro — é o resultado direto de três mudanças em conjunto: SMOTE corrigindo o desbalanceamento, feature engineering adicional (AgeInactivity, EngagementScore, BalanceSalaryRatio) e otimização bayesiana com Optuna.
-
----
-
-## Parte 6 — Deploy, Monitoramento e Operação do Modelo
-
-### 6.1 Persistência e Versionamento do Modelo
-
-O pipeline completo — DataImputer, FeatureReducer, SMOTE e LGBMClassifier — é serializado localmente via joblib e registrado no MLflow Model Registry sob o nome `bank-churn-lgbm`. Cada novo treino gera uma versão numerada automaticamente.
-
-O fluxo de promoção é controlado por um gate de qualidade: modelos que atingem ROC-AUC ≥ 0,85 e Recall ≥ 0,65 são promovidos automaticamente para **Production**; os demais ficam em **Staging** para inspeção manual. Versões anteriores são arquivadas, mantendo o histórico completo de modelos implantados e permitindo rollback imediato se necessário.
+The recall jump from 0.36 to 0.82 — more than double — is the direct result of three combined changes: SMOTE correcting imbalance, additional feature engineering (AgeInactivity, EngagementScore, BalanceSalaryRatio), and Bayesian optimization with Optuna.
 
 ---
 
-### 6.2 Empacotamento como Artefato de Inferência
+## Part 6 — Model Deployment, Monitoring, and Operation
 
-O modelo é empacotado como artefato autocontido: um único arquivo carregável que inclui todo o pipeline de transformação e predição, sem necessidade de reprocessar os dados de treino. Um arquivo de schema acompanha o artefato, documentando as colunas esperadas, a variável-alvo e o threshold de decisão — formalizando o contrato de inferência entre o modelo e qualquer serviço que o consuma.
+### 6.1 Model Persistence and Versioning
 
----
+The complete pipeline — DataImputer, FeatureReducer, SMOTE, and LGBMClassifier — is serialized locally via joblib and registered in the MLflow Model Registry under the name `bank-churn-lgbm`. Each retrain produces a versioned artifact automatically.
 
-### 6.3 Serviço de Inferência
-
-O modelo é exposto via API REST (FastAPI) com três endpoints: verificação de saúde, predição individual e predição em lote. Cada resposta inclui a probabilidade de churn, o flag de decisão e um nível de risco categorizado em baixo, médio ou alto — permitindo que a equipe de retenção priorize ações sem precisar interpretar probabilidades brutas.
-
-Uma interface visual (Streamlit) complementa a API, permitindo simulações interativas com formulário de entrada e resultado imediato com indicação visual de risco por cor.
-
-O serviço carrega o modelo diretamente do MLflow Registry (estágio Production) e recorre ao artefato local como fallback automático caso o Registry não esteja disponível.
+Promotion flow is controlled by a quality gate: models achieving ROC-AUC ≥ 0.85 and Recall ≥ 0.65 are automatically promoted to **Production**; others remain in **Staging** for manual review. Prior versions are archived, preserving the full deployment history and enabling immediate rollback if necessary.
 
 ---
 
-### 6.4 Pipeline CI/CD Simulado
+### 6.2 Packaging as an Inference Artifact
 
-O pipeline de integração e entrega contínua automatiza seis etapas em sequência: validação do ambiente, verificação dos dados de entrada, treino e registro do modelo, gate de qualidade com verificação de métricas mínimas, smoke test da API e ciclo inicial de monitoramento. O pipeline aborta imediatamente em qualquer falha, garantindo que nenhum modelo deficiente seja promovido a produção.
-
----
-
-### 6.5 Métricas Técnicas e de Impacto de Negócio
-
-#### Métricas Técnicas
-
-| Métrica | Valor | Descrição |
-|---------|-------|-----------|
-| ROC-AUC | 0,8613 | Discriminação geral entre classes |
-| Recall | 0,6740 | Proporção de churners reais identificados |
-| F1-score | 0,6104 | Equilíbrio entre precisão e recall |
-| Precision | 0,5578 | Confiabilidade das predições positivas |
-
-#### Métricas de Impacto de Negócio
-
-Calculadas para cada batch mensal de produção com base em premissas de negócio: receita anual por cliente retido de €500, custo de €40 por ação de retenção e taxa de sucesso de retenção de 30%.
-
-| Métrica | Referência (batch de 1.000 clientes) |
-|---------|--------------------------------------|
-| Verdadeiros positivos (churners corretamente identificados) | 130 de 192 |
-| Falsos positivos (clientes abordados desnecessariamente) | 104 |
-| Receita preservada estimada | €19.500 |
-| Custo total de campanhas | €9.360 |
-| ROI estimado | 1,1x |
+The model is packaged as a self-contained artifact: a single loadable file that includes the entire transformation and prediction pipeline, without the need to reprocess training data. A schema file accompanies the artifact, documenting the expected columns, target variable, and decision threshold — formalizing the inference contract between the model and any consuming service.
 
 ---
 
-### 6.6 Monitoramento Pós-Deploy e Detecção de Drift
+### 6.3 Inference Service
 
-O monitoramento é executado a cada batch de dados novos e gera um run no MLflow com tag `stage=monitoring`, permitindo acompanhar a evolução das métricas ao longo do tempo.
+The model is exposed via a REST API (FastAPI) with three endpoints: health check, single prediction, and batch prediction. Each response includes churn probability, decision flag, and a risk level categorized as low, medium, or high — allowing the retention team to prioritize actions without interpreting raw probabilities.
 
-**Data drift** é detectado pelo teste de Kolmogorov-Smirnov aplicado feature a feature, comparando a distribuição do conjunto de treino com a do batch de produção. Um p-value abaixo de 0,05 indica que a distribuição de uma feature mudou significativamente. No ciclo inicial simulado: 0 de 20 features com drift detectado.
+A visual interface (Streamlit) complements the API, enabling interactive simulations with an input form and immediate risk-colored results.
 
-**Estabilidade das probabilidades** é medida pelo PSI (Population Stability Index) sobre as saídas do modelo. Valores abaixo de 0,10 indicam estabilidade; acima de 0,20, drift severo com re-treino recomendado. Resultado inicial: PSI = 0,028 — estável.
-
-**Model drift** é avaliado pela queda nas métricas entre o batch de referência e o batch de produção. Quedas acima de 3 pontos percentuais em AUC ou 5 pontos em recall acionam alerta. Resultado inicial: sem model drift detectado.
+The service loads the model directly from the MLflow Registry (Production stage) and falls back to the local artifact automatically if the Registry is unavailable.
 
 ---
 
-### 6.7 Estratégia de Re-treinamento
+### 6.4 Simulated CI/CD Pipeline
 
-O re-treino é acionado por quatro gatilhos: três ou mais features com drift detectado pelo KS test, PSI acima de 0,20, queda relevante nas métricas de produção, ou schedule mensal preventivo independente de drift.
+The continuous integration and delivery pipeline automates six sequential stages: environment validation, input data verification, model training and registration, quality gate with metric checks, API smoke test, and initial monitoring cycle. The pipeline aborts immediately on any failure, ensuring that no deficient model is promoted to production.
 
-A janela de treino utiliza os últimos 12 meses de dados para evitar que padrões obsoletos contaminem o modelo. Antes de qualquer promoção, o novo modelo passa pelo mesmo gate de qualidade do CI/CD. A versão anterior permanece disponível no Registry para rollback imediato caso o novo modelo apresente regressão em produção.
+---
+
+### 6.5 Technical and Business Impact Metrics
+
+#### Technical metrics
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| ROC-AUC | 0.8613 | Overall class discrimination |
+| Recall | 0.6740 | Proportion of real churners identified |
+| F1-score | 0.6104 | Balance between precision and recall |
+| Precision | 0.5578 | Reliability of positive predictions |
+
+#### Business impact metrics
+
+Calculated for each monthly production batch based on business assumptions: annual revenue per retained customer of €500, intervention cost of €40 per retention action, and a 30% retention success rate.
+
+| Metric | Reference (1,000-customer batch) |
+|--------|----------------------------------|
+| True positives (correctly identified churners) | 130 of 192 |
+| False positives (unnecessarily contacted customers) | 104 |
+| Estimated preserved revenue | €19,500 |
+| Total campaign cost | €9,360 |
+| Estimated ROI | 1.1x |
+
+---
+
+### 6.6 Post-Deploy Monitoring and Drift Detection
+
+Monitoring runs on each new data batch and logs an MLflow run with tag `stage=monitoring`, allowing metric evolution tracking over time.
+
+**Data drift** is detected by the Kolmogorov-Smirnov test applied feature by feature, comparing the training distribution to the production batch distribution. A p-value below 0.05 indicates a significant distribution change. In the initial simulated cycle: 0 of 20 features exhibited drift.
+
+**Probability stability** is measured by PSI (Population Stability Index) on model outputs. Values below 0.10 indicate stability; above 0.20, severe drift with retraining recommended. Initial result: PSI = 0.028 — stable.
+
+**Model drift** is evaluated by metric degradation between the reference batch and production batch. Drops greater than 3 percentage points in AUC or 5 points in recall trigger an alert. Initial result: no model drift detected.
+
+---
+
+### 6.7 Retraining Strategy
+
+Retraining is triggered by four conditions: three or more features with KS-detected drift, PSI above 0.20, significant production metric degradation, or a preventive monthly schedule independent of drift.
+
+The training window uses the last 12 months of data to avoid stale patterns contaminating the model. Before promotion, the new model passes the same CI/CD quality gate. The previous version remains available in the Registry for immediate rollback if the new model regresses in production.

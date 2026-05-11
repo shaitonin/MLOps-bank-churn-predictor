@@ -1,18 +1,18 @@
 # %%
-# Experimento controlado: hiperparâmetros fixados nos melhores valores
-# encontrados pelo Optuna, variando apenas a técnica de DR.
+# Controlled experiment: hyperparameters fixed at the best values
+# found by Optuna, varying only the DR technique.
 #
-# Técnicas comparadas:
-#   none   — sem redução  (20 features, linha de base)
-#   PCA    — componentes principais (não-supervisionado, 18 comp.)
-#   LDA    — análise discriminante linear (supervisionado, 1 comp. binário)
+# Techniques compared:
+#   none   — no reduction  (20 features, baseline)
+#   PCA    — principal components (unsupervised, 18 components)
+#   LDA    — linear discriminant analysis (supervised, 1 binary component)
 #
 # Pipeline: DataImputer → [StandardScaler] → FeatureReducer → SMOTE → LGBMClassifier
-#   • StandardScaler adicionado antes de PCA e LDA (sensíveis à escala)
-#   • LightGBM não requer scaling — mantido consistente com modelagem.py
+#   • StandardScaler added before PCA and LDA (both are scale-sensitive)
+#   • LightGBM does not require scaling — kept consistent with modelagem.py
 #
-# Saída: MLflow experiment "bank-churn-classification"
-#        runs nomeados: dr_lgbm_none | dr_lgbm_pca18 | dr_lgbm_lda1
+# Output: MLflow experiment "bank-churn-classification"
+#         runs named: dr_lgbm_none | dr_lgbm_pca18 | dr_lgbm_lda1
 
 # %%
 import sys
@@ -51,12 +51,12 @@ warnings.filterwarnings('ignore')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Configuração
+# Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 SEED      = 42
-THRESHOLD = 0.40        # mesmo threshold da Parte 3
+THRESHOLD = 0.40        # same threshold as Part 3
 N_SPLITS  = 5           # StratifiedKFold
 
 config      = load_yaml(CONFIG_DIR / 'modeling.yaml')
@@ -67,7 +67,7 @@ cv_cfg      = config.get('cv', {})
 
 logger = get_logger('dr_experiment', config.get('logging', {}))
 
-# Melhores hiperparâmetros do LightGBM encontrados pelo Optuna (Parte 3)
+# Best LightGBM hyperparameters found by Optuna (Part 3)
 BEST_LGBM_PARAMS = {
     'n_estimators':       528,
     'num_leaves':         30,
@@ -84,7 +84,7 @@ BEST_LGBM_PARAMS = {
 }
 
 # %%
-# MLflow — mesmo experimento da Parte 3
+# MLflow — same experiment as Part 3
 tracking_uri = config.get('mlflow', {}).get('tracking_uri', 'sqlite:///mlflow.db')
 _known_schemes = ('sqlite://', 'postgresql://', 'mysql://', 'http://', 'https://', 'file://')
 if any(tracking_uri.startswith(s) for s in _known_schemes):
@@ -95,17 +95,17 @@ else:
 mlflow.set_tracking_uri(_resolved_uri)
 experiment_name = config.get('mlflow', {}).get('experiment_name', 'bank-churn-classification')
 mlflow.set_experiment(experiment_name)
-logger.info('MLflow URI: %s | Experimento: %s', _resolved_uri, experiment_name)
+logger.info('MLflow URI: %s | Experiment: %s', _resolved_uri, experiment_name)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Carregar Dados
+# Load Data
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 features_file = ROOT_DIR / 'data' / 'features' / 'bank_churn_features.parquet'
 if not features_file.exists():
-    raise FileNotFoundError(f"Execute preprocessamento.py antes: {features_file}")
+    raise FileNotFoundError(f"Run preprocessamento.py first: {features_file}")
 
 df         = pq.read_table(str(features_file)).to_pandas()
 target_col = config.get('feature_selection', {}).get('target', 'Exited')
@@ -113,29 +113,29 @@ feat_cols  = [c for c in df.columns if c != target_col]
 X          = df[feat_cols].copy()
 y          = df[target_col]
 
-# sanitiza nomes de colunas (XGBoost / LightGBM rejeitam caracteres especiais)
+# sanitize column names (XGBoost / LightGBM reject special characters)
 _rename = {c: c.replace('<', 'lt_').replace('[', '(').replace(']', ')')
            for c in X.columns if any(ch in c for ch in ('<', '[', ']'))}
 if _rename:
     X        = X.rename(columns=_rename)
     feat_cols = list(X.columns)
 
-logger.info('Dataset: %d amostras, %d features | churn=%.1f%%',
+logger.info('Dataset: %d samples, %d features | churn=%.1f%%',
             len(df), len(feat_cols), y.mean() * 100)
 
 # %%
-# Train / Holdout split — mesmos parâmetros da Parte 3
+# Train / Holdout split — same parameters as Part 3
 X_train, X_holdout, y_train, y_holdout = train_test_split(
     X, y,
     test_size=holdout_cfg.get('test_size', 0.20),
     random_state=SEED,
     stratify=y if holdout_cfg.get('stratify', True) else None,
 )
-logger.info('Treino: %d | Holdout: %d', len(X_train), len(X_holdout))
+logger.info('Train: %d | Holdout: %d', len(X_train), len(X_holdout))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Funções Auxiliares
+# Helper Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -171,7 +171,7 @@ def _run_cv(pipeline, X, y, n_splits, threshold) -> dict:
 
 
 def _build_pipeline(reducer_params: dict) -> ImbPipeline:
-    """Constrói pipeline com DataImputer → [StandardScaler] → FeatureReducer → SMOTE → LightGBM."""
+    """Build pipeline: DataImputer → [StandardScaler] → FeatureReducer → SMOTE → LightGBM."""
     imp_specs = []
     for spec in pipe_cfg.get('imputation', []):
         normalized = dict(spec)
@@ -183,7 +183,7 @@ def _build_pipeline(reducer_params: dict) -> ImbPipeline:
     if imp_specs:
         steps.append(('imputer', DataImputer(imputation_config=imp_specs)))
 
-    # StandardScaler antes de PCA e LDA: ambos são sensíveis à escala das features
+    # StandardScaler before PCA and LDA: both are sensitive to feature scale
     if reducer_params.get('method') in ('pca', 'lda'):
         steps.append(('scaler', StandardScaler()))
 
@@ -200,10 +200,10 @@ def _build_pipeline(reducer_params: dict) -> ImbPipeline:
 
 
 def _count_output_features(pipeline, X_sample, y_sample) -> int:
-    """Retorna o número de features após redução (útil para logar no MLflow)."""
+    """Return the number of features after reduction (useful for MLflow logging)."""
     try:
         p = clone(pipeline)
-        # Fit apenas até o reducer para inspecionar a saída
+        # Fit only up to the reducer to inspect the output
         steps_no_smote_model = [(n, s) for n, s in p.steps
                                 if n not in ('smote', 'lgbm')]
         temp = ImbPipeline(steps_no_smote_model)
@@ -214,7 +214,7 @@ def _count_output_features(pipeline, X_sample, y_sample) -> int:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Definição dos experimentos de DR
+# DR Experiment Definitions
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -222,23 +222,23 @@ DR_CONFIGS = [
     {
         'run_name':      'dr_lgbm_none',
         'reducer_params': {'method': 'none'},
-        'description':   'Sem redução de dimensionalidade — 20 features originais',
+        'description':   'No dimensionality reduction — 20 original features',
     },
     {
         'run_name':      'dr_lgbm_pca18',
         'reducer_params': {'method': 'pca', 'n_components': 18, 'random_state': SEED},
-        'description':   'PCA — 18 componentes principais (não-supervisionado)',
+        'description':   'PCA — 18 principal components (unsupervised)',
     },
     {
         'run_name':      'dr_lgbm_lda1',
         'reducer_params': {'method': 'lda', 'n_components': 1},
-        'description':   'LDA — 1 componente discriminante (supervisionado, binário)',
+        'description':   'LDA — 1 discriminant component (supervised, binary)',
     },
 ]
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Execução dos Experimentos
+# Run Experiments
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -251,14 +251,14 @@ for exp in DR_CONFIGS:
     method        = reducer_params['method']
 
     logger.info('─' * 60)
-    logger.info('Iniciando: %s — %s', run_name, description)
+    logger.info('Starting: %s — %s', run_name, description)
 
     pipeline = _build_pipeline(reducer_params)
 
-    # Validação cruzada
+    # Cross-validation
     cv_metrics = _run_cv(pipeline, X_train, y_train, N_SPLITS, THRESHOLD)
 
-    # Treino no conjunto de treino completo para avaliação no holdout
+    # Train on full training set for holdout evaluation
     final_model = clone(pipeline)
     final_model.fit(X_train, y_train)
     y_prob_ho = final_model.predict_proba(X_holdout)[:, 1]
@@ -271,7 +271,7 @@ for exp in DR_CONFIGS:
     logger.info('  CV F1      : %.4f | Recall: %.4f', cv_metrics['cv_f1_mean'], cv_metrics['cv_recall_mean'])
     logger.info('  Holdout AUC: %.4f | F1: %.4f | Recall: %.4f',
                 holdout_metrics['roc_auc'], holdout_metrics['f1'], holdout_metrics['recall'])
-    logger.info('  Features após DR: %d → %d | Tempo CV: %.1fs',
+    logger.info('  Features after DR: %d → %d | CV Time: %.1fs',
                 len(feat_cols), n_out, cv_metrics['training_time_s'])
 
     # Log MLflow
@@ -298,7 +298,7 @@ for exp in DR_CONFIGS:
         mlflow.log_metrics({f'holdout_{k}': v for k, v in holdout_metrics.items()})
 
     results_summary.append({
-        'método':        method.upper() if method != 'none' else 'Sem DR',
+        'method':        method.upper() if method != 'none' else 'No DR',
         'features':      n_out,
         'cv_auc':        cv_metrics['cv_roc_auc_mean'],
         'cv_auc_std':    cv_metrics['cv_roc_auc_std'],
@@ -308,23 +308,23 @@ for exp in DR_CONFIGS:
         'ho_f1':         holdout_metrics['f1'],
         'ho_recall':     holdout_metrics['recall'],
         'ho_precision':  holdout_metrics['precision'],
-        'tempo_cv_s':    round(cv_metrics['training_time_s'], 1),
+        'cv_time_s':     round(cv_metrics['training_time_s'], 1),
     })
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Tabela Comparativa
+# Comparative Summary
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('RESULTADO FINAL — Comparação de Técnicas de DR')
+logger.info('FINAL RESULTS — DR Technique Comparison')
 
 df_res = pd.DataFrame(results_summary)
 df_res = df_res.sort_values('ho_auc', ascending=False).reset_index(drop=True)
 
 cols_display = {
-    'método':       'Técnica DR',
+    'method':       'DR Technique',
     'features':     'Features',
     'cv_auc':       'CV AUC',
     'cv_auc_std':   '±std',
@@ -334,14 +334,14 @@ cols_display = {
     'ho_f1':        'Holdout F1',
     'ho_recall':    'Holdout Recall',
     'ho_precision': 'Holdout Prec.',
-    'tempo_cv_s':   'Tempo CV (s)',
+    'cv_time_s':    'CV Time (s)',
 }
 
 print('\n' + '=' * 90)
-print('COMPARAÇÃO TÉCNICAS DE REDUÇÃO DE DIMENSIONALIDADE — LightGBM (threshold=0.40)')
+print('DIMENSIONALITY REDUCTION TECHNIQUE COMPARISON — LightGBM (threshold=0.40)')
 print('=' * 90)
 print(df_res.rename(columns=cols_display).to_string(index=False, float_format='%.4f'))
 print('=' * 90)
 
-logger.info('Experimentos logados no MLflow sob o experimento: %s', experiment_name)
-logger.info('Filtrar no UI pela tag stage=dr_comparison')
+logger.info('Experiments logged to MLflow under experiment: %s', experiment_name)
+logger.info('Filter in UI by tag stage=dr_comparison')

@@ -1,29 +1,29 @@
 """
-eda/eda_analysis.py — Análise Exploratória de Dados
+eda/eda_analysis.py — Exploratory Data Analysis
 
-Objetivo principal:
-    Derivar os parâmetros estatísticos reais do dataset para calibrar as
-    expectations do Great Expectations (quality.yaml) e informar feature engineering.
+Main objective:
+    Derive real statistical parameters from the dataset to calibrate
+    Great Expectations expectations (quality.yaml) and inform feature engineering.
 
 
-Seções da análise:
-    1.  Visão geral do dataset
-    2.  Valores ausentes e duplicatas
-    3.  Estatísticas univariadas (numéricas + categóricas)
-    4.  Análise da variável alvo — taxa de churn
-    5.  Correlações (Pearson, Spearman, Cramér's V)
-    6.  Testes univariados (Mann-Whitney, Welch t-test, Cohen's d)
-    7.  ANOVA + Kruskal-Wallis + Tukey HSD (diferenças entre grupos)
-    8.  Levene test (homogeneidade de variância)
-    9.  Eta-squared (effect size para variáveis categóricas)
-    10. Chi-squared entre todas as categóricas
-    11. Interações 2-way entre features principais
-    12. Clustering simples (KMeans) para segmentação
-    13. Sugestões de parâmetros para Great Expectations
+Analysis sections:
+    1.  Dataset overview
+    2.  Missing values and duplicates
+    3.  Univariate statistics (numeric + categorical)
+    4.  Target variable analysis — churn rate
+    5.  Correlations (Pearson, Spearman, Cramér's V)
+    6.  Univariate tests (Mann-Whitney, Welch t-test, Cohen's d)
+    7.  ANOVA + Kruskal-Wallis + Tukey HSD (group differences)
+    8.  Levene test (variance homogeneity)
+    9.  Eta-squared (effect size for categorical variables)
+    10. Chi-squared between all categoricals
+    11. 2-way interactions between key features
+    12. Simple clustering (KMeans) for segmentation
+    13. Parameter suggestions for Great Expectations
 
 Outputs:
-    outputs/eda/eda_report_<timestamp>.json  — relatório JSON completo
-    outputs/eda/plots/*.png                  
+    outputs/eda/eda_report_<timestamp>.json  — complete JSON report
+    outputs/eda/plots/*.png
 """
 
 import json
@@ -44,7 +44,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-# ── caminhos ───────────────────────────────────────────────────────────────────
+# ── paths ──────────────────────────────────────────────────────────────────────
 ROOT       = Path(__file__).resolve().parent.parent
 DATA_PATH  = ROOT / "data" / "raw" / "Customer-Churn-Records.csv"
 OUTPUT_DIR = ROOT / "outputs" / "eda"
@@ -54,13 +54,13 @@ PLOTS_DIR  = OUTPUT_DIR / "plots"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.utils.logger import get_logger          
+from src.utils.logger import get_logger
 from src.utils.config_loader import load_yaml
 
 _pipeline_cfg = load_yaml(ROOT / "config" / "pipeline.yaml")
 logger = get_logger("eda", _pipeline_cfg.get("logging", {}))
 
-# ── metadados do schema ────────────────────────────────────────────────────────
+# ── schema metadata ────────────────────────────────────────────────────────────
 TARGET_COL       = "Exited"
 ID_COLS          = ["RowNumber", "CustomerId", "Surname"]
 
@@ -71,10 +71,10 @@ NUMERIC_COLS = [
 BINARY_COLS      = ["HasCrCard", "IsActiveMember", "Exited", "Complain"]
 CATEGORICAL_COLS = ["Geography", "Gender", "Card Type"]
 
-# percentis relevantes
+# relevant percentiles
 PERCENTILES = [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
 
-# para interações: features prioritárias para classificação
+# interaction pairs: priority features for classification
 INTERACTION_PAIRS = [
     ("Age", "Tenure"),
     ("Balance", "NumOfProducts"),
@@ -84,7 +84,7 @@ INTERACTION_PAIRS = [
 
 
 class _NumpyEncoder(json.JSONEncoder):
-    """Converte tipos numpy para tipos Python nativos (JSON-serializable)."""
+    """Convert numpy types to native Python types (JSON-serializable)."""
     def default(self, obj: Any) -> Any:
         if isinstance(obj, np.integer):
             return int(obj)
@@ -99,7 +99,7 @@ class _NumpyEncoder(json.JSONEncoder):
 
 
 def _f(val: Any) -> Any:
-    """Converte valor para tipo Python nativo."""
+    """Convert value to native Python type."""
     if isinstance(val, np.integer):
         return int(val)
     if isinstance(val, np.floating):
@@ -110,7 +110,7 @@ def _f(val: Any) -> Any:
     return val
 
 
-# ── classe principal ───────────────────────────────────────────────────────────
+# ── main class ─────────────────────────────────────────────────────────────────
 class EDAAnalyzer:
 
     def __init__(self, df: pd.DataFrame, target_col: str = TARGET_COL) -> None:
@@ -119,7 +119,7 @@ class EDAAnalyzer:
         self._plots: list[tuple[str, plt.Figure]] = []
         warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    # ── seção 1: visão geral ───────────────────────────────────────────────────
+    # ── section 1: overview ───────────────────────────────────────────────────
     def _overview(self) -> dict:
         df = self.df
         return {
@@ -134,7 +134,7 @@ class EDAAnalyzer:
             "categorical_columns": CATEGORICAL_COLS,
         }
 
-    # ── seção 2: valores ausentes ──────────────────────────────────────────────
+    # ── section 2: missing values ──────────────────────────────────────────────
     def _missing_values(self) -> dict:
         df    = self.df
         total = len(df)
@@ -155,7 +155,7 @@ class EDAAnalyzer:
             "per_column":           per_col,
         }
 
-    # ── seção 3: duplicatas ────────────────────────────────────────────────────
+    # ── section 3: duplicates ──────────────────────────────────────────────────
     def _duplicates(self) -> dict:
         df           = self.df
         feature_cols = [c for c in df.columns if c not in ID_COLS]
@@ -166,7 +166,7 @@ class EDAAnalyzer:
                                                if "CustomerId" in df.columns else None,
         }
 
-    # ── seção 4: estatísticas numéricas ───────────────────────────────────────
+    # ── section 4: numeric statistics ─────────────────────────────────────────
     def _numeric_stats(self) -> dict:
         df     = self.df
         result = {}
@@ -221,7 +221,7 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 5: estatísticas categóricas ─────────────────────────────────────
+    # ── section 5: categorical statistics ─────────────────────────────────────
     def _categorical_stats(self) -> dict:
         df     = self.df
         result = {}
@@ -244,7 +244,7 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 6: análise da variável alvo ─────────────────────────────────────
+    # ── section 6: target variable analysis ───────────────────────────────────
     def _target_analysis(self) -> dict:
         df = self.df
         if self.target not in df.columns:
@@ -285,7 +285,7 @@ class EDAAnalyzer:
             "churn_by_satisfaction":  _churn_by_group("Satisfaction Score"),
         }
 
-    # ── seção 7: correlações ──────────────────────────────────────────────────
+    # ── section 7: correlations ───────────────────────────────────────────────
     def _correlations(self) -> dict:
         df       = self.df
         num_cols = [c for c in NUMERIC_COLS + BINARY_COLS if c in df.columns]
@@ -308,7 +308,7 @@ class EDAAnalyzer:
                 "significant_a05":  bool(p_p < 0.05),
             }
 
-        # Chi-square + Cramér's V para categóricas vs target
+        # Chi-square + Cramér's V for categoricals vs target
         chi2_results: dict = {}
         for col in CATEGORICAL_COLS:
             if col not in df.columns:
@@ -349,7 +349,7 @@ class EDAAnalyzer:
             "chi2_tests_vs_target":         chi2_results,
         }
 
-    # ── seção 8: testes univariados (Mann-Whitney, Welch, Cohen's d) ─────────
+    # ── section 8: univariate tests (Mann-Whitney, Welch, Cohen's d) ─────────
     def _statistical_tests(self) -> dict:
         df      = self.df
         churned = df[df[self.target] == 1]
@@ -397,9 +397,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 9: ANOVA 1-way + Kruskal-Wallis + Tukey HSD ──────────────────────
+    # ── section 9: ANOVA 1-way + Kruskal-Wallis + Tukey HSD ───────────────────
     def _anova_and_kruskal(self) -> dict:
-        """Diferenças entre grupos (ex: churn × Geografia, churn × NumOfProducts)."""
+        """Group differences (e.g.: churn × Geography, churn × NumOfProducts)."""
         df = self.df
         result: dict = {}
 
@@ -415,7 +415,7 @@ class EDAAnalyzer:
                     continue
 
                 try:
-                    groups = [group[numeric_col].dropna().values 
+                    groups = [group[numeric_col].dropna().values
                               for name, group in df.groupby(group_col)]
                     if len(groups) < 2:
                         continue
@@ -451,9 +451,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 10: Levene test (homogeneidade de variância) ───────────────────
+    # ── section 10: Levene test (variance homogeneity) ────────────────────────
     def _levene_test(self) -> dict:
-        """Testa se variâncias são iguais entre grupos (churned vs retained)."""
+        """Test whether variances are equal across groups (churned vs retained)."""
         df = self.df
         result: dict = {}
 
@@ -479,9 +479,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 11: Eta-squared (effect size categórico) ──────────────────────
+    # ── section 11: Eta-squared (categorical effect size) ─────────────────────
     def _eta_squared(self) -> dict:
-        """Eta-squared: proporção de variância explicada pela variável categórica."""
+        """Eta-squared: proportion of variance explained by the categorical variable."""
         df = self.df
         result: dict = {}
 
@@ -497,14 +497,14 @@ class EDAAnalyzer:
                 try:
                     data = df[[numeric_col, cat_col]].dropna()
                     grand_mean = data[numeric_col].mean()
-                    
+
                     ss_between = sum(
                         len(group) * (group[numeric_col].mean() - grand_mean) ** 2
                         for _, group in data.groupby(cat_col)
                     )
-                    
+
                     ss_total = sum((data[numeric_col] - grand_mean) ** 2)
-                    
+
                     eta_sq = ss_between / ss_total if ss_total > 0 else 0.0
 
                     result[numeric_col][cat_col] = {
@@ -521,9 +521,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 12: Chi-squared entre TODAS as categóricas ─────────────────────
+    # ── section 12: Chi-squared between ALL categoricals ──────────────────────
     def _chi2_between_categoricals(self) -> dict:
-        """Chi-squared tests entre todos os pares de variáveis categóricas."""
+        """Chi-squared tests between all pairs of categorical variables."""
         df = self.df
         all_cat = CATEGORICAL_COLS + BINARY_COLS
         result: dict = {}
@@ -551,9 +551,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 13: Interações 2-way ───────────────────────────────────────────
+    # ── section 13: 2-way interactions ────────────────────────────────────────
     def _interactions_2way(self) -> dict:
-        """Análise de interações entre features principal e relação com churn."""
+        """Analyze interactions between key features and their relation to churn."""
         df = self.df
         result: dict = {}
 
@@ -603,9 +603,9 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 14: Clustering (KMeans) para segmentação ─────────────────────
+    # ── section 14: Clustering (KMeans) for segmentation ──────────────────────
     def _clustering(self) -> dict:
-        """KMeans clustering para descobrir segmentos naturais de clientes."""
+        """KMeans clustering to discover natural customer segments."""
         df = self.df
         numeric_subdf = df[NUMERIC_COLS].dropna()
 
@@ -653,13 +653,13 @@ class EDAAnalyzer:
 
         return result
 
-    # ── seção 15: sugestões para Great Expectations ────────────────────────
+    # ── section 15: Great Expectations suggestions ────────────────────────────
     def _ge_suggestions(
         self,
         numeric_stats:     dict,
         categorical_stats: dict,
     ) -> dict:
-        """Gera parâmetros para expectations baseado nos dados reais."""
+        """Generate expectation parameters based on real data."""
         df = self.df
         suggestions: dict = {
             "table_expectations":  [],
@@ -671,7 +671,7 @@ class EDAAnalyzer:
         suggestions["table_expectations"].extend([
             {
                 "type":      "expect_table_row_count_to_be_between",
-                "rationale": f"Dataset atual tem {n} linhas. Tolerância ±20%.",
+                "rationale": f"Current dataset has {n} rows. Tolerance ±20%.",
                 "kwargs":    {
                     "min_value": int(n * 0.8),
                     "max_value": int(n * 1.2),
@@ -679,7 +679,7 @@ class EDAAnalyzer:
             },
             {
                 "type":      "expect_table_columns_to_match_set",
-                "rationale": "Schema estável (sem colunas extras ou faltando).",
+                "rationale": "Stable schema (no extra or missing columns).",
                 "kwargs":    {
                     "column_set":  [c for c in df.columns if c not in ID_COLS],
                     "exact_match": True,
@@ -696,7 +696,7 @@ class EDAAnalyzer:
 
             exps.append({
                 "type":      "expect_column_values_to_not_be_null",
-                "rationale": "Coluna numérica obrigatória.",
+                "rationale": "Required numeric column.",
                 "kwargs":    {},
             })
             exps.append({
@@ -719,16 +719,16 @@ class EDAAnalyzer:
             suggestions["column_expectations"][col] = [
                 {
                     "type":      "expect_column_values_to_be_in_set",
-                    "rationale": f"Valores observados: {vals}",
+                    "rationale": f"Observed values: {vals}",
                     "kwargs":    {"value_set": vals},
                 },
             ]
 
         return suggestions
 
-    # ── seção 16: geração de visualizações ─────────────────────────────────
+    # ── section 16: plot generation ────────────────────────────────────────────
     def _generate_plots(self) -> None:
-        """Gera 15+ visualizações focadas em classificação."""
+        """Generate 15+ visualizations focused on classification."""
         df = self.df
 
         # 1. Target distribution
@@ -737,20 +737,20 @@ class EDAAnalyzer:
         labels = ["Retained", "Churned"]
         colors = ["steelblue", "tomato"]
         axes[0].bar(labels, vc.values, color=colors, edgecolor="white", alpha=0.85)
-        axes[0].set_title("Distribuição da Variável Alvo", fontweight="bold")
-        axes[0].set_ylabel("Contagem")
+        axes[0].set_title("Target Variable Distribution", fontweight="bold")
+        axes[0].set_ylabel("Count")
         for i, v in enumerate(vc.values):
             axes[0].text(i, v + 50, f"{v:,}\n({v/len(df)*100:.1f}%)", ha="center")
-        
+
         axes[1].pie(vc.values, labels=labels, autopct="%1.1f%%", colors=colors,
                     startangle=90, wedgeprops={"edgecolor": "white", "linewidth": 1.5})
-        axes[1].set_title("Taxa de Churn", fontweight="bold")
-        plt.suptitle("Desbalanceamento: Churn vs Retained", fontsize=13, fontweight="bold")
+        axes[1].set_title("Churn Rate", fontweight="bold")
+        plt.suptitle("Class Imbalance: Churn vs Retained", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("01_target_distribution", fig))
         plt.close(fig)
 
-        # 2. Numéricas — histogramas
+        # 2. Numeric — histograms
         fig, axes = plt.subplots(2, 4, figsize=(20, 10))
         for i, col in enumerate(NUMERIC_COLS):
             if col not in df.columns:
@@ -762,12 +762,12 @@ class EDAAnalyzer:
             ax.set_title(col, fontweight="bold", fontsize=10)
             ax.set_xlabel("")
         axes[0][0].legend(fontsize=8)
-        plt.suptitle("Distribuição das Variáveis Numéricas", fontsize=13, fontweight="bold")
+        plt.suptitle("Numeric Variables Distribution", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("02_numeric_distributions", fig))
         plt.close(fig)
 
-        # 3. Boxplots: numéricas × churn
+        # 3. Boxplots: numeric × churn
         fig, axes = plt.subplots(2, 4, figsize=(20, 10))
         for i, col in enumerate(NUMERIC_COLS):
             if col not in df.columns:
@@ -779,25 +779,25 @@ class EDAAnalyzer:
                        flierprops=dict(marker="o", markersize=3, alpha=0.4, color="grey"))
             ax.set_title(col, fontweight="bold", fontsize=10)
             ax.set_xlabel("Exited (0=Retained, 1=Churned)", fontsize=9)
-        plt.suptitle("Comparação de Numéricas: Churned vs Retained (Boxplots)",
+        plt.suptitle("Numeric Comparison: Churned vs Retained (Boxplots)",
                      fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("03_numeric_by_target_boxplot", fig))
         plt.close(fig)
 
-        # 4. Heatmap de correlação
+        # 4. Correlation heatmap
         num_bin_cols = [c for c in NUMERIC_COLS + BINARY_COLS if c in df.columns]
         corr = df[num_bin_cols].corr()
         fig, ax = plt.subplots(figsize=(14, 12))
         mask = np.triu(np.ones_like(corr, dtype=bool))
         sns.heatmap(corr, annot=True, fmt=".2f", cmap="RdBu_r", center=0,
                     mask=mask, ax=ax, linewidths=0.4, vmin=-1, vmax=1, annot_kws={"size": 8})
-        ax.set_title("Matriz de Correlação (Pearson)", fontsize=13, fontweight="bold")
+        ax.set_title("Correlation Matrix (Pearson)", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("04_correlation_heatmap", fig))
         plt.close(fig)
 
-        # 5. Categóricas × churn (stacked bars)
+        # 5. Categoricals × churn (stacked bars)
         fig, axes = plt.subplots(1, 3, figsize=(18, 5))
         for i, col in enumerate(CATEGORICAL_COLS):
             if col not in df.columns:
@@ -807,12 +807,12 @@ class EDAAnalyzer:
             ct.plot(kind="bar", ax=axes[i], color=["steelblue", "tomato"],
                     edgecolor="white", alpha=0.85)
             axes[i].set_title(f"{col} × Churn", fontweight="bold", fontsize=11)
-            axes[i].set_ylabel("Percentual (%)")
+            axes[i].set_ylabel("Percentage (%)")
             axes[i].set_xlabel("")
             axes[i].tick_params(axis="x", rotation=15)
             axes[i].legend(loc="upper right", fontsize=9)
             axes[i].set_ylim(0, 110)
-        plt.suptitle("Categóricas × Churn (% normalizado)", fontsize=13, fontweight="bold")
+        plt.suptitle("Categoricals × Churn (normalized %)", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("05_categorical_by_target", fig))
         plt.close(fig)
@@ -829,7 +829,7 @@ class EDAAnalyzer:
             ax.set_title(f"Age — {label}", fontweight="bold")
             ax.set_xlabel("Age")
             ax.set_ylabel("Density")
-        plt.suptitle("Distribuição de Idade (Separated by Churn)", fontsize=13, fontweight="bold")
+        plt.suptitle("Age Distribution (Separated by Churn)", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("06_age_distribution_by_churn", fig))
         plt.close(fig)
@@ -849,7 +849,7 @@ class EDAAnalyzer:
         axes[1].set_title("Balance (non-zero) × Churn", fontweight="bold")
         axes[1].set_xlabel("Balance")
         axes[1].legend()
-        plt.suptitle("Análise de Balance", fontsize=13, fontweight="bold")
+        plt.suptitle("Balance Analysis", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("07_balance_distribution", fig))
         plt.close(fig)
@@ -867,7 +867,7 @@ class EDAAnalyzer:
             ax.set_title(f"CreditScore — {geo}", fontweight="bold")
             ax.set_xlabel("CreditScore")
             ax.legend(fontsize=8)
-        plt.suptitle("CreditScore por Geografia e Churn", fontsize=13, fontweight="bold")
+        plt.suptitle("CreditScore by Geography and Churn", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("08_creditscore_by_geography", fig))
         plt.close(fig)
@@ -889,7 +889,7 @@ class EDAAnalyzer:
         axes[1].set_title("Point Earned × Churn", fontweight="bold")
         axes[1].set_xlabel("Point Earned")
         axes[1].legend()
-        plt.suptitle("Satisfação e Pontos", fontsize=13, fontweight="bold")
+        plt.suptitle("Satisfaction and Points", fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("09_satisfaction_and_points", fig))
         plt.close(fig)
@@ -900,7 +900,7 @@ class EDAAnalyzer:
         axes[0].bar(pivot_prod["NumOfProducts"].astype(str),
                     pivot_prod[self.target] * 100,
                     color="tomato", edgecolor="white", alpha=0.85)
-        axes[0].set_title("Churn Rate (%) por NumOfProducts", fontweight="bold")
+        axes[0].set_title("Churn Rate (%) by NumOfProducts", fontweight="bold")
         axes[0].set_xlabel("NumOfProducts")
         axes[0].set_ylabel("Churn Rate (%)")
         for _, row in pivot_prod.iterrows():
@@ -910,26 +910,26 @@ class EDAAnalyzer:
         pivot_ten = df.groupby("Tenure")[self.target].mean().reset_index()
         axes[1].plot(pivot_ten["Tenure"], pivot_ten[self.target] * 100,
                     marker="o", color="tomato", linewidth=2, markersize=6)
-        axes[1].set_title("Churn Rate (%) por Tenure", fontweight="bold")
-        axes[1].set_xlabel("Tenure (anos)")
+        axes[1].set_title("Churn Rate (%) by Tenure", fontweight="bold")
+        axes[1].set_xlabel("Tenure (years)")
         axes[1].set_ylabel("Churn Rate (%)")
         axes[1].grid(True, alpha=0.3)
-        plt.suptitle("Churn Rate por NumOfProducts e Tenure",
+        plt.suptitle("Churn Rate by NumOfProducts and Tenure",
                      fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("10_products_and_tenure_churn", fig))
         plt.close(fig)
 
-        # 11. Churn rate por Geografia
+        # 11. Churn rate by Geography
         fig, ax = plt.subplots(figsize=(10, 6))
         geo_churn = df.groupby("Geography")[self.target].agg(["sum", "count", "mean"]).reset_index()
         geo_churn.columns = ["Geography", "Churned", "Total", "ChurnRate"]
         geo_churn["ChurnRate"] *= 100
         bars = ax.bar(geo_churn["Geography"], geo_churn["ChurnRate"],
                      color="tomato", edgecolor="white", alpha=0.85)
-        ax.set_title("Churn Rate por Geografia", fontweight="bold", fontsize=12)
+        ax.set_title("Churn Rate by Geography", fontweight="bold", fontsize=12)
         ax.set_ylabel("Churn Rate (%)")
-        ax.set_xlabel("Geografia")
+        ax.set_xlabel("Geography")
         for bar, rate in zip(bars, geo_churn["ChurnRate"]):
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
                    f"{rate:.1f}%", ha="center", fontsize=10, fontweight="bold")
@@ -944,7 +944,7 @@ class EDAAnalyzer:
         gen_churn["ChurnRate"] *= 100
         bars = ax.bar(gen_churn["Gender"], gen_churn["ChurnRate"],
                      color=["steelblue", "tomato"], edgecolor="white", alpha=0.85)
-        ax.set_title("Churn Rate por Gender", fontweight="bold", fontsize=12)
+        ax.set_title("Churn Rate by Gender", fontweight="bold", fontsize=12)
         ax.set_ylabel("Churn Rate (%)")
         ax.set_xlabel("Gender")
         for bar, rate in zip(bars, gen_churn["ChurnRate"]):
@@ -954,7 +954,7 @@ class EDAAnalyzer:
         self._plots.append(("12_churn_by_gender", fig))
         plt.close(fig)
 
-        # 13. Age bins × Churn (estratégia de segmentação)
+        # 13. Age bins × Churn (segmentation strategy)
         fig, ax = plt.subplots(figsize=(12, 6))
         df_copy = df.copy()
         df_copy["Age_bin"] = pd.cut(df_copy["Age"], bins=[0, 30, 40, 50, 60, 100],
@@ -964,7 +964,7 @@ class EDAAnalyzer:
         age_churn["ChurnRate"] *= 100
         bars = ax.bar(age_churn["AgeGroup"], age_churn["ChurnRate"],
                      color="tomato", edgecolor="white", alpha=0.85)
-        ax.set_title("Churn Rate por Faixa Etária", fontweight="bold", fontsize=12)
+        ax.set_title("Churn Rate by Age Group", fontweight="bold", fontsize=12)
         ax.set_ylabel("Churn Rate (%)")
         ax.set_xlabel("Age Group")
         for bar, rate, count in zip(bars, age_churn["ChurnRate"], age_churn["Total"]):
@@ -981,9 +981,9 @@ class EDAAnalyzer:
         tenure_churn["cum_churned"] = tenure_churn["sum"].cumsum() / df[df[self.target]==1].shape[0] * 100
         ax.plot(tenure_churn["Tenure"], tenure_churn["cum_churned"],
                marker="o", color="tomato", linewidth=2, markersize=4)
-        ax.set_title("Proporção Acumulada de Churned por Tenure", fontweight="bold", fontsize=12)
-        ax.set_ylabel("% Acumulada de Churned")
-        ax.set_xlabel("Tenure (anos)")
+        ax.set_title("Cumulative Churned Proportion by Tenure", fontweight="bold", fontsize=12)
+        ax.set_ylabel("Cumulative % Churned")
+        ax.set_xlabel("Tenure (years)")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
         self._plots.append(("14_cumulative_churn_by_tenure", fig))
@@ -999,34 +999,34 @@ class EDAAnalyzer:
                    edgecolor="white", alpha=0.85)
             label = "Active" if active == 1 else "Inactive"
             axes[i].set_title(f"IsActiveMember={label}: Complain × Churn", fontweight="bold")
-            axes[i].set_ylabel("Percentual (%)")
+            axes[i].set_ylabel("Percentage (%)")
             axes[i].set_xlabel("Complain (0=No, 1=Yes)")
             axes[i].tick_params(axis="x", rotation=0)
             axes[i].legend()
             axes[i].set_ylim(0, 110)
-        plt.suptitle("Efeito de Atividade do Membro e Reclamação no Churn",
+        plt.suptitle("Effect of Member Activity and Complaint on Churn",
                      fontsize=13, fontweight="bold")
         plt.tight_layout()
         self._plots.append(("15_active_member_complain_churn", fig))
         plt.close(fig)
 
-    # ── orquestrador principal ─────────────────────────────────────────────────
+    # ── main orchestrator ──────────────────────────────────────────────────────
     def run(self) -> dict:
-        """Executa todas as seções da análise."""
+        """Execute all analysis sections."""
         steps = [
-            ("Visão geral",                self._overview),
-            ("Valores ausentes",           self._missing_values),
-            ("Duplicatas",                 self._duplicates),
-            ("Estatísticas numéricas",     self._numeric_stats),
-            ("Estatísticas categóricas",   self._categorical_stats),
-            ("Análise do target",          self._target_analysis),
-            ("Correlações",                self._correlations),
-            ("Testes univariados",         self._statistical_tests),
+            ("Overview",                   self._overview),
+            ("Missing values",             self._missing_values),
+            ("Duplicates",                 self._duplicates),
+            ("Numeric statistics",         self._numeric_stats),
+            ("Categorical statistics",     self._categorical_stats),
+            ("Target analysis",            self._target_analysis),
+            ("Correlations",               self._correlations),
+            ("Univariate tests",           self._statistical_tests),
             ("ANOVA + Kruskal-Wallis",     self._anova_and_kruskal),
             ("Levene test",                self._levene_test),
             ("Eta-squared",                self._eta_squared),
-            ("Chi-squared categóricas",    self._chi2_between_categoricals),
-            ("Interações 2-way",           self._interactions_2way),
+            ("Chi-squared categoricals",   self._chi2_between_categoricals),
+            ("2-way interactions",         self._interactions_2way),
             ("Clustering (KMeans)",        self._clustering),
         ]
 
@@ -1039,14 +1039,14 @@ class EDAAnalyzer:
             "chi2_categoricals", "interactions_2way", "clustering",
         ]
 
-        logger.info("Executando análise exploratória...")
+        logger.info("Running exploratory analysis...")
         for (label, fn), key in zip(steps, keys):
             idx = keys.index(key) + 1
             try:
                 results[key] = fn()
                 logger.info("  [%2d/%d] %s ✓", idx, len(steps), label)
             except Exception as e:
-                logger.error("  [%2d/%d] %s ✗ (erro: %s)", idx, len(steps), label, str(e)[:50])
+                logger.error("  [%2d/%d] %s ✗ (error: %s)", idx, len(steps), label, str(e)[:50])
                 results[key] = {"error": str(e)}
 
         try:
@@ -1054,9 +1054,9 @@ class EDAAnalyzer:
                 results["numeric_statistics"],
                 results["categorical_statistics"],
             )
-            logger.info("  [%2d/%d] Sugestões Great Expectations ✓", len(steps) + 1, len(steps) + 1)
+            logger.info("  [%2d/%d] Great Expectations Suggestions ✓", len(steps) + 1, len(steps) + 1)
         except Exception as e:
-            logger.error("  [%2d/%d] Sugestões Great Expectations ✗ (%s)", len(steps) + 1, len(steps) + 1, e)
+            logger.error("  [%2d/%d] Great Expectations Suggestions ✗ (%s)", len(steps) + 1, len(steps) + 1, e)
 
         return {
             "metadata": {
@@ -1069,7 +1069,7 @@ class EDAAnalyzer:
         }
 
     def save_report(self, report: dict, output_dir: Path) -> Path:
-        """Salva relatório como JSON."""
+        """Save report as JSON."""
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         ts          = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -1078,18 +1078,18 @@ class EDAAnalyzer:
         with open(report_path, "w", encoding="utf-8") as fh:
             json.dump(report, fh, indent=2, ensure_ascii=False, cls=_NumpyEncoder)
 
-        logger.info("Relatório JSON: %s", report_path.name)
+        logger.info("JSON report: %s", report_path.name)
         return report_path
 
     def save_plots(self, output_dir: Path) -> list[Path]:
-        """Gera e salva todos os plots."""
-        logger.info("Gerando visualizações...")
+        """Generate and save all plots."""
+        logger.info("Generating visualizations...")
         self._generate_plots()
 
         plots_dir = Path(output_dir) / "plots"
         plots_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("Salvando %d visualizações...", len(self._plots))
+        logger.info("Saving %d visualizations...", len(self._plots))
         saved: list[Path] = []
         for name, fig in self._plots:
             path = plots_dir / f"{name}.png"
@@ -1103,57 +1103,57 @@ class EDAAnalyzer:
 # ── entrypoint ─────────────────────────────────────────────────────────────────
 def main() -> None:
     logger.info("=" * 70)
-    logger.info("  BANK CHURN — Análise Exploratória de Dados (EDA v2.0 — Classificação)")
+    logger.info("  BANK CHURN — Exploratory Data Analysis (EDA v2.0 — Classification)")
     logger.info("=" * 70)
     logger.info("  Dataset    : %s", DATA_PATH)
     logger.info("  Output     : %s", OUTPUT_DIR)
     logger.info("=" * 70)
 
     if not DATA_PATH.exists():
-        logger.error("Arquivo não encontrado: %s", DATA_PATH)
+        logger.error("File not found: %s", DATA_PATH)
         sys.exit(1)
 
     df = pd.read_csv(DATA_PATH)
-    logger.info("Dataset carregado: %d linhas x %d colunas", df.shape[0], df.shape[1])
+    logger.info("Dataset loaded: %d rows x %d columns", df.shape[0], df.shape[1])
 
     analyzer = EDAAnalyzer(df)
     report = analyzer.run()
 
-    logger.info("Salvando outputs...")
+    logger.info("Saving outputs...")
     report_path = analyzer.save_report(report, OUTPUT_DIR)
     plot_paths  = analyzer.save_plots(OUTPUT_DIR)
 
-    # ── sumário final ──────────────────────────────────────────────────────────
+    # ── final summary ──────────────────────────────────────────────────────────
     overview = report["overview"]
     target   = report["target_analysis"]
     missing  = report["missing_values"]
 
     logger.info("=" * 70)
-    logger.info("  SUMÁRIO DA ANÁLISE")
+    logger.info("  ANALYSIS SUMMARY")
     logger.info("=" * 70)
-    logger.info("  Linhas x Colunas         : %d x %d", overview['n_rows'], overview['n_cols'])
-    logger.info("  Memória                  : %s MB", overview['memory_mb'])
-    logger.info("  Taxa de Churn            : %.2f%% (%d/%d)", target['churn_rate_pct'], target['n_churned'], target['n_total'])
-    logger.info("  Desbalanceamento (1:N)   : 1:%.2f", target['class_imbalance_ratio'])
-    logger.info("  Células ausentes         : %d (%.4f%%)", missing['total_missing_cells'], missing['overall_missing_pct'])
-    logger.info("  Visualizações geradas    : %d", len(plot_paths))
-    logger.info("  JSON salvo               : %s", report_path.name)
+    logger.info("  Rows x Columns           : %d x %d", overview['n_rows'], overview['n_cols'])
+    logger.info("  Memory                   : %s MB", overview['memory_mb'])
+    logger.info("  Churn Rate               : %.2f%% (%d/%d)", target['churn_rate_pct'], target['n_churned'], target['n_total'])
+    logger.info("  Class Imbalance (1:N)    : 1:%.2f", target['class_imbalance_ratio'])
+    logger.info("  Missing cells            : %d (%.4f%%)", missing['total_missing_cells'], missing['overall_missing_pct'])
+    logger.info("  Visualizations generated : %d", len(plot_paths))
+    logger.info("  JSON saved               : %s", report_path.name)
     logger.info("=" * 70)
 
-    # Top correlações
+    # Top correlations
     ranked = report["correlations"].get("target_correlations_ranked", [])
     if ranked:
-        logger.info("Top Features (Pearson |r| com Exited):")
+        logger.info("Top Features (Pearson |r| with Exited):")
         for entry in ranked[:5]:
             r = entry.get("pearson_r")
             if r:
                 logger.info("  %-22s r = %+.4f", entry['feature'], r)
 
-    # Diferenças significativas
+    # Significant differences
     stat_tests = report.get("statistical_tests", {})
     sig_cols = [col for col, res in stat_tests.items() if res.get("mann_whitney_u", {}).get("significant_a05")]
     if sig_cols:
-        logger.info("Features com diferença significativa (Mann-Whitney p<0.05):")
+        logger.info("Features with significant difference (Mann-Whitney p<0.05):")
         for col in sig_cols[:5]:
             d = stat_tests[col].get("cohens_d", 0)
             logger.info("  %-22s Cohen's d = %+.3f", col, d)
@@ -1161,10 +1161,10 @@ def main() -> None:
     # Clustering insights
     clustering_info = report.get("clustering", {})
     if "optimal_k" in clustering_info:
-        logger.info("Clustering: %d segmentos de clientes encontrados", clustering_info['optimal_k'])
+        logger.info("Clustering: %d customer segments found", clustering_info['optimal_k'])
 
-    logger.info("Consulte o JSON para análises detalhadas (ANOVA, Tukey, Interações)")
-    logger.info("Use os plots para visualizações focadas em classificação")
+    logger.info("See the JSON for detailed analyses (ANOVA, Tukey, Interactions)")
+    logger.info("Use the plots for classification-focused visualizations")
     logger.info("=" * 70)
 
 

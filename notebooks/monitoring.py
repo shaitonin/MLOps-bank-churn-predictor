@@ -1,10 +1,10 @@
 # %%
-# Simula um ciclo de monitoramento em produção:
-#   1. "Batch de produção" = segunda metade do holdout (dados nunca vistos)
-#   2. Data drift: teste KS feature a feature (treino vs. produção)
-#   3. Model drift: compara métricas de produção com baseline do deploy
-#   4. PSI (Population Stability Index) para features contínuas
-#   5. Loga tudo no MLflow — run separado por "ciclo de monitoramento"
+# Simulates a production monitoring cycle:
+#   1. "Production batch" = second half of holdout (never-seen data)
+#   2. Data drift: KS test feature by feature (train vs. production)
+#   3. Model drift: compares production metrics against deploy baseline
+#   4. PSI (Population Stability Index) for continuous features
+#   5. Logs everything to MLflow — separate run per "monitoring cycle"
 
 # %%
 import sys
@@ -39,12 +39,12 @@ logger  = get_logger('monitoring', config.get('logging', {}))
 SEED       = 42
 THRESHOLD  = 0.40
 
-# Thresholds de alerta para drift
-KS_PVALUE_ALERT   = 0.05   # p < 0.05 → distribuição mudou
-PSI_ALERT         = 0.20   # PSI > 0.20 → drift severo
-PSI_WARNING       = 0.10   # PSI > 0.10 → drift moderado
-AUC_DROP_ALERT    = 0.03   # queda > 3pp → alerta de model drift
-RECALL_DROP_ALERT = 0.05   # queda > 5pp → alerta de model drift
+# Alert thresholds for drift
+KS_PVALUE_ALERT   = 0.05   # p < 0.05 → distribution shifted
+PSI_ALERT         = 0.20   # PSI > 0.20 → severe drift
+PSI_WARNING       = 0.10   # PSI > 0.10 → moderate drift
+AUC_DROP_ALERT    = 0.03   # drop > 3pp → model drift alert
+RECALL_DROP_ALERT = 0.05   # drop > 5pp → model drift alert
 
 # %%
 # MLflow
@@ -58,7 +58,7 @@ mlflow.set_experiment(experiment_name)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Carregar Dados
+# Load Data
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -75,7 +75,7 @@ if _rename:
     X        = X.rename(columns=_rename)
     feat_cols = list(X.columns)
 
-# Replica o split do deploy.py (mesmo seed → mesmo holdout)
+# Replicate the split from deploy.py (same seed → same holdout)
 holdout_cfg = config.get('holdout', {})
 X_train, X_holdout, y_train, y_holdout = train_test_split(
     X, y,
@@ -84,22 +84,22 @@ X_train, X_holdout, y_train, y_holdout = train_test_split(
     stratify=y,
 )
 
-# "Produção" = metade do holdout (simulação de um batch mensal)
+# "Production" = half of holdout (simulates a monthly batch)
 half = len(X_holdout) // 2
 X_prod = X_holdout.iloc[:half].copy()
 y_prod = y_holdout.iloc[:half].copy()
-X_ref  = X_holdout.iloc[half:].copy()   # referência de deploy
+X_ref  = X_holdout.iloc[half:].copy()   # deploy reference
 
-logger.info('Treino (ref): %d | Prod batch: %d', len(X_train), len(X_prod))
+logger.info('Train (ref): %d | Prod batch: %d', len(X_train), len(X_prod))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Funções de Drift
+# Drift Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 def ks_drift(X_train: pd.DataFrame, X_prod: pd.DataFrame) -> pd.DataFrame:
-    """Teste KS para cada feature numérica. p < 0.05 → drift detectado."""
+    """KS test for each numeric feature. p < 0.05 → drift detected."""
     results = []
     for col in X_train.select_dtypes(include=np.number).columns:
         stat, pval = stats.ks_2samp(X_train[col].dropna(), X_prod[col].dropna())
@@ -113,7 +113,7 @@ def ks_drift(X_train: pd.DataFrame, X_prod: pd.DataFrame) -> pd.DataFrame:
 
 
 def psi(expected: np.ndarray, actual: np.ndarray, bins: int = 10) -> float:
-    """Population Stability Index entre distribuições de probabilidade."""
+    """Population Stability Index between probability distributions."""
     breakpoints = np.percentile(expected, np.linspace(0, 100, bins + 1))
     breakpoints  = np.unique(breakpoints)
     exp_counts, _ = np.histogram(expected, bins=breakpoints)
@@ -125,17 +125,17 @@ def psi(expected: np.ndarray, actual: np.ndarray, bins: int = 10) -> float:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Executar Monitoramento
+# Run Monitoring
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('Carregando modelo de produção...')
+logger.info('Loading production model...')
 predictor = ChurnPredictor()
-logger.info('Modelo carregado: %s', predictor.source)
+logger.info('Model loaded: %s', predictor.source)
 
 # %%
-# Métricas no batch de referência (deploy)
+# Metrics on reference batch (deploy)
 out_ref  = predictor.predict(X_ref)
 y_pred_r = out_ref['churn_flag'].values
 y_prob_r = out_ref['churn_probability'].values
@@ -145,7 +145,7 @@ ref_metrics = {
     'ref_f1':      float(f1_score(y_holdout.iloc[half:], y_pred_r, zero_division=0)),
 }
 
-# Métricas no batch de produção
+# Metrics on production batch
 out_prod  = predictor.predict(X_prod)
 y_pred_p  = out_prod['churn_flag'].values
 y_prob_p  = out_prod['churn_probability'].values
@@ -167,12 +167,12 @@ logger.info('Prod — AUC: %.4f | Recall: %.4f | F1: %.4f',
 # %%
 # Data drift — KS test
 logger.info('─' * 60)
-logger.info('Calculando data drift (KS test)...')
+logger.info('Calculating data drift (KS test)...')
 ks_results  = ks_drift(X_train, X_prod)
 drifted     = ks_results[ks_results['drift']]
 n_drifted   = len(drifted)
 
-logger.info('Features com drift detectado (p < %.2f): %d/%d',
+logger.info('Features with drift detected (p < %.2f): %d/%d',
             KS_PVALUE_ALERT, n_drifted, len(feat_cols))
 if n_drifted > 0:
     for _, row in drifted.iterrows():
@@ -180,15 +180,15 @@ if n_drifted > 0:
                        row['feature'], row['ks_stat'], row['p_value'])
 
 # %%
-# PSI nas probabilidades preditas
+# PSI on predicted probabilities
 psi_score = psi(y_prob_r, y_prob_p)
-logger.info('PSI nas probabilidades preditas: %.4f', psi_score)
+logger.info('PSI on predicted probabilities: %.4f', psi_score)
 if psi_score > PSI_ALERT:
-    logger.warning('PSI SEVERO (%.3f > %.2f) — considerar re-treino', psi_score, PSI_ALERT)
+    logger.warning('PSI SEVERE (%.3f > %.2f) — consider retraining', psi_score, PSI_ALERT)
 elif psi_score > PSI_WARNING:
-    logger.warning('PSI MODERADO (%.3f > %.2f) — monitorar', psi_score, PSI_WARNING)
+    logger.warning('PSI MODERATE (%.3f > %.2f) — monitor closely', psi_score, PSI_WARNING)
 else:
-    logger.info('PSI estável (%.3f)', psi_score)
+    logger.info('PSI stable (%.3f)', psi_score)
 
 # %%
 # Model drift
@@ -196,15 +196,15 @@ model_drift_auc    = auc_drop    > AUC_DROP_ALERT
 model_drift_recall = recall_drop > RECALL_DROP_ALERT
 
 if model_drift_auc or model_drift_recall:
-    logger.warning('MODEL DRIFT DETECTADO — AUC drop=%.4f | Recall drop=%.4f',
+    logger.warning('MODEL DRIFT DETECTED — AUC drop=%.4f | Recall drop=%.4f',
                    auc_drop, recall_drop)
 else:
-    logger.info('Sem model drift significativo — AUC drop=%.4f | Recall drop=%.4f',
+    logger.info('No significant model drift — AUC drop=%.4f | Recall drop=%.4f',
                 auc_drop, recall_drop)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Log no MLflow
+# Log to MLflow
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -226,42 +226,42 @@ with mlflow.start_run(run_name='monitoring_cycle_01'):
 
     mlflow.log_metrics({**ref_metrics, **prod_metrics, **drift_summary})
 
-    # Loga tabela de drift por feature como artefato CSV
+    # Log per-feature drift table as CSV artifact
     ks_path = ROOT_DIR / 'outputs' / 'models' / 'ks_drift_results.csv'
     ks_path.parent.mkdir(parents=True, exist_ok=True)
     ks_results.to_csv(ks_path, index=False)
     mlflow.log_artifact(str(ks_path), artifact_path='monitoring')
 
 logger.info('─' * 60)
-logger.info('Monitoramento logado no MLflow.')
+logger.info('Monitoring logged to MLflow.')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Relatório de Impacto de Negócio
+# Business Impact Report
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
-n_clientes         = len(X_prod)
-n_churn_real       = int(y_prod.sum())
-n_detectados       = int(y_pred_p[y_prod == 1].sum())   # TP
-n_falsos_positivos = int((y_pred_p == 1).sum()) - n_detectados  # FP
+n_customers        = len(X_prod)
+n_actual_churn     = int(y_prod.sum())
+n_detected         = int(y_pred_p[y_prod == 1].sum())   # TP
+n_false_positives  = int((y_pred_p == 1).sum()) - n_detected  # FP
 
-receita_por_cliente   = 500     # € receita anual média por cliente retido
-custo_campanha        = 40      # € custo de uma ação de retenção
-taxa_retencao_sucesso = 0.30    # 30% dos clientes abordados são retidos
+revenue_per_customer   = 500     # € average annual revenue per retained customer
+campaign_cost          = 40      # € cost of a single retention action
+retention_success_rate = 0.30    # 30% of approached customers are retained
 
-receita_preservada  = n_detectados * taxa_retencao_sucesso * receita_por_cliente
-custo_total_campanha = (n_detectados + n_falsos_positivos) * custo_campanha
-roi                 = (receita_preservada - custo_total_campanha) / max(custo_total_campanha, 1)
+preserved_revenue   = n_detected * retention_success_rate * revenue_per_customer
+total_campaign_cost = (n_detected + n_false_positives) * campaign_cost
+roi                 = (preserved_revenue - total_campaign_cost) / max(total_campaign_cost, 1)
 
 print('\n' + '=' * 60)
-print('RELATÓRIO DE IMPACTO DE NEGÓCIO — Batch de Produção')
+print('BUSINESS IMPACT REPORT — Production Batch')
 print('=' * 60)
-print(f'Clientes no batch        : {n_clientes}')
-print(f'Churners reais           : {n_churn_real}')
-print(f'Churners detectados (TP) : {n_detectados}  ({n_detectados/max(n_churn_real,1)*100:.1f}%)')
-print(f'Falsos positivos (FP)    : {n_falsos_positivos}')
-print(f'Receita preservada (est.): €{receita_preservada:,.0f}')
-print(f'Custo campanhas          : €{custo_total_campanha:,.0f}')
-print(f'ROI estimado             : {roi:.1f}x')
+print(f'Customers in batch       : {n_customers}')
+print(f'Actual churners          : {n_actual_churn}')
+print(f'Detected churners (TP)   : {n_detected}  ({n_detected/max(n_actual_churn,1)*100:.1f}%)')
+print(f'False positives (FP)     : {n_false_positives}')
+print(f'Preserved revenue (est.) : €{preserved_revenue:,.0f}')
+print(f'Campaign cost            : €{total_campaign_cost:,.0f}')
+print(f'Estimated ROI            : {roi:.1f}x')
 print('=' * 60)

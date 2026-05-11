@@ -1,44 +1,99 @@
 # Bank Customer Churn Prediction — MLOps
 
-Projeto de MLOps para predição de churn de clientes bancários. Desenvolvido como trabalho prático da disciplina de MLOps do Instituto INFNET.
+MLOps project for predicting bank customer churn. Developed as a practical assignment for the MLOps course at Instituto INFNET.
 
-O objetivo é identificar, com antecedência, clientes com alta probabilidade de encerrar seu relacionamento com o banco — antes que sinais explícitos se tornem disponíveis — permitindo ações proativas de retenção.
+The objective is to identify, in advance, customers with a high probability of ending their relationship with the bank — before explicit signs become available — allowing proactive retention actions.
 
 ---
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
-├── app/
-│   ├── main.py               # API REST de inferência (FastAPI)
-│   └── streamlit_app.py      # Interface visual interativa (Streamlit)
-├── config/
-│   ├── modeling.yaml         # Configuração de modelos, Optuna, MLflow, pipeline
-│   └── pipeline.yaml         # Configuração de ingestão de dados
-├── data/
-│   ├── raw/                  # Dados brutos (CSV do Kaggle)
-│   ├── processed/            # Dados processados (Parquet)
-│   └── features/             # Features engineered (Parquet)
-├── docs/
-│   └── relatorio_tecnico.md  # Relatório técnico completo (Partes 1–6)
-├── notebooks/
-│   ├── ingestao.py           # Ingestão e conversão para Parquet
-│   ├── qualidade.py          # Validação de qualidade (Great Expectations)
-│   ├── preprocessamento.py   # Feature engineering
-│   ├── modelagem.py          # Experimentação com Optuna + MLflow
-│   ├── dimensionality_reduction.py  # Experimento de redução de dimensionalidade
-│   ├── deploy.py             # Treino final + registro no MLflow Registry
-│   └── monitoring.py         # Detecção de drift e monitoramento pós-deploy
-├── scripts/
-│   └── ci_cd.sh              # Pipeline CI/CD simulado
-├── src/
-│   ├── preprocessing.py      # DataImputer, scalers
-│   ├── feature_reducer.py    # FeatureReducer (none | pca | lda | rfe | kpca)
-│   ├── inference.py          # ChurnPredictor — carrega modelo e executa predições
-│   └── utils/                # Logger e config loader
-├── outputs/
-│   ├── models/               # Pipeline serializado (joblib) + schema JSON
-│   └── eda/                  # Relatório EDA em JSON
+├── app
+│   ├── __init__.py
+│   ├── main.py
+│   └── streamlit_app.py
+├── config
+│   ├── data.yaml
+│   ├── modeling.yaml
+│   ├── pipeline.yaml
+│   ├── preprocessing.yaml
+│   └── quality.yaml
+├── data
+│   ├── features
+│   │   └── bank_churn_features.parquet
+│   ├── processed
+│   │   └── bank_churn.parquet
+│   └── raw
+│       └── Customer-Churn-Records.csv
+├── docs
+│   └── eda_report.md
+├── eda
+│   ├── __init__.py
+│   └── eda_analysis.py
+├── notebooks
+│   ├── deploy.py
+│   ├── dimensionality_reduction.py
+│   ├── ingestao.py
+│   ├── modelagem.py
+│   ├── monitoring.py
+│   ├── preprocessamento.py
+│   └── qualidade.py
+├── outputs
+│   ├── eda
+│   │   ├── plots
+│   │   │   ├── 01_target_distribution.png
+│   │   │   ├── 02_numeric_distributions.png
+│   │   │   ├── 03_numeric_by_target_boxplot.png
+│   │   │   ├── 04_correlation_heatmap.png
+│   │   │   ├── 05_categorical_by_target.png
+│   │   │   ├── 06_age_distribution_by_churn.png
+│   │   │   ├── 07_balance_distribution.png
+│   │   │   ├── 08_creditscore_by_geography.png
+│   │   │   ├── 09_satisfaction_and_points.png
+│   │   │   ├── 10_products_and_tenure_churn.png
+│   │   │   ├── 11_churn_by_geography.png
+│   │   │   ├── 12_churn_by_gender.png
+│   │   │   ├── 13_churn_by_age_bins.png
+│   │   │   ├── 14_cumulative_churn_by_tenure.png
+│   │   │   └── 15_active_member_complain_churn.png
+│   │   └── eda_report_20260418_101339.json
+│   ├── modeling
+│   │   ├── class_distribution.png
+│   │   ├── confusion_matrix_lightgbm.png
+│   │   ├── confusion_matrix_lightgbm_holdout.png
+│   │   ├── cv_fold_comparison_lightgbm.png
+│   │   ├── feature_importance_lightgbm.png
+│   │   ├── pr_curve_lightgbm.png
+│   │   ├── pr_curve_lightgbm_holdout.png
+│   │   ├── roc_curve_lightgbm.png
+│   │   ├── roc_curve_lightgbm_holdout.png
+│   │   ├── shap_summary_lightgbm.png
+│   │   └── threshold_analysis_lightgbm.png
+│   ├── models
+│   │   ├── ks_drift_results.csv
+│   │   ├── model_schema.json
+│   │   └── pipeline_final.joblib
+│   └── quality
+│       ├── quality_report_20260408_200934.json
+│       └── quality_report_20260413_200544.json
+├── scripts
+│   └── ci_cd.sh
+├── src
+│   ├── utils
+│   │   ├── __init__.py
+│   │   ├── config_loader.py
+│   │   └── logger.py
+│   ├── __init__.py
+│   ├── dowloader.py
+│   ├── feature_reducer.py
+│   ├── inference.py
+│   ├── ingestion.py
+│   ├── preprocessing.py
+│   └── quality_checks.py
+├── README.md
+├── mlflow.db
+├── relatorio_tecnico.md
 └── requirements.txt
 ```
 
@@ -47,12 +102,12 @@ O objetivo é identificar, com antecedência, clientes com alta probabilidade de
 ## Dataset
 
 **Bank Customer Churn** — Kaggle  
-10.000 clientes, 18 features, variável-alvo `Exited` (churn = 1).  
-Desbalanceamento: 79,6% não-churn / 20,4% churn (razão 3,91:1).
+10,000 customers, 18 features, target variable `Exited` (churn = 1).  
+Imbalance: 79.6% non-churn / 20.4% churn (ratio 3.91:1).
 
 ---
 
-## Instalação
+## Installation
 
 ```bash
 git clone <repo>
@@ -64,39 +119,39 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Para XGBoost no Mac:
+For XGBoost on Mac:
 ```bash
 brew install libomp
 ```
 
 ---
 
-## Execução do Pipeline Completo
+## Running the Complete Pipeline
 
 ```bash
-# 1. Ingestão
+# 1. Ingestion
 python notebooks/ingestao.py
 
-# 2. Qualidade dos dados
+# 2. Data quality
 python notebooks/qualidade.py
 
-# 3. Pré-processamento e feature engineering
+# 3. Preprocessing and feature engineering
 python notebooks/preprocessamento.py
 
-# 4. Experimentação (Optuna + MLflow — ~6h para 30 trials × 4 modelos)
+# 4. Experimentation (Optuna + MLflow — ~6h for 30 trials × 4 models)
 python notebooks/modelagem.py
 
-# 5. Experimento de redução de dimensionalidade
+# 5. Dimensionality reduction experiment
 python notebooks/dimensionality_reduction.py
 
-# 6. Deploy do modelo final
+# 6. Deploy final model
 python notebooks/deploy.py
 
-# 7. Monitoramento pós-deploy
+# 7. Post-deploy monitoring
 python notebooks/monitoring.py
 ```
 
-Ou via pipeline CI/CD simulado:
+Or via simulated CI/CD pipeline:
 ```bash
 chmod +x scripts/ci_cd.sh
 ./scripts/ci_cd.sh
@@ -104,21 +159,21 @@ chmod +x scripts/ci_cd.sh
 
 ---
 
-## Serviços
+## Services
 
 ### MLflow UI
 ```bash
-mlflow ui --backend-store-uri sqlite:////caminho/absoluto/mlflow.db
+mlflow ui --backend-store-uri sqlite:////absolute/path/mlflow.db
 # http://localhost:5000
 ```
 
-### API REST (FastAPI)
+### REST API (FastAPI)
 ```bash
 uvicorn app.main:app --reload --port 8000
 # http://localhost:8000/docs
 ```
 
-### Interface Visual (Streamlit)
+### Visual Interface (Streamlit)
 ```bash
 streamlit run app/streamlit_app.py
 # http://localhost:8501
@@ -126,16 +181,16 @@ streamlit run app/streamlit_app.py
 
 ---
 
-## Modelo Final
+## Final Model
 
-**LightGBM** com hiperparâmetros otimizados via Optuna (30 trials, TPE Sampler), sem redução de dimensionalidade, com SMOTE para tratamento do desbalanceamento.
+**LightGBM** with hyperparameters optimized via Optuna (30 trials, TPE Sampler), without dimensionality reduction, with SMOTE for imbalance handling.
 
-| Métrica | Valor |
+| Metric | Value |
 |---------|-------|
-| ROC-AUC (holdout) | 0,873 |
-| Recall churn (holdout) | 0,816 |
-| F1-score (holdout) | 0,597 |
-| Threshold de decisão | 0,40 |
+| ROC-AUC (holdout) | 0.873 |
+| Churn recall (holdout) | 0.816 |
+| F1-score (holdout) | 0.597 |
+| Decision threshold | 0.40 |
 
 **Pipeline:**
 ```
@@ -144,32 +199,32 @@ DataImputer → FeatureReducer(none) → SMOTE → LGBMClassifier
 
 ---
 
-## Tecnologias
+## Technologies
 
-| Categoria | Tecnologias |
+| Category | Technologies |
 |-----------|------------|
-| Modelagem | scikit-learn, LightGBM, XGBoost, imbalanced-learn |
-| Otimização | Optuna (TPE Sampler) |
-| Rastreamento | MLflow (SQLite backend) |
-| Qualidade de dados | Great Expectations |
+| Modeling | scikit-learn, LightGBM, XGBoost, imbalanced-learn |
+| Optimization | Optuna (TPE Sampler) |
+| Tracking | MLflow (SQLite backend) |
+| Data Quality | Great Expectations |
 | Deploy | FastAPI, Streamlit, joblib |
-| Monitoramento | SciPy (KS test), PSI |
+| Monitoring | SciPy (KS test), PSI |
 
 ---
 
 ## EDA Report
 
-Relatório automatizado gerado em `outputs/eda/eda_report_*.json` com resultados de testes estatísticos (Mann-Whitney U, ANOVA, Kruskal-Wallis, Tukey HSD, chi-quadrado, Cramér's V), segmentação via K-Means e 15 visualizações salvas em `outputs/eda/plots/`.
+Automated report generated at `outputs/eda/eda_report_*.json` with results of statistical tests (Mann-Whitney U, ANOVA, Kruskal-Wallis, Tukey HSD, chi-squared, Cramér's V), K-Means segmentation, and 15 visualizations saved at `outputs/eda/plots/`.
 
 ---
 
-## Relatório Técnico
+## Technical Report
 
-O relatório completo está em `docs/relatorio_tecnico.md` e cobre:
+The full report is at `relatorio_tecnico.md` and covers:
 
-- **Parte 1** — Definição do problema, experimentos anteriores e critérios de sucesso
-- **Parte 2** — Pipeline de dados, qualidade e feature engineering
-- **Parte 3** — Experimentação sistemática com 4 modelos e Optuna
-- **Parte 4** — Análise de redução de dimensionalidade (PCA, LDA, t-SNE)
-- **Parte 5** — Seleção e justificativa do modelo final
-- **Parte 6** — Deploy, monitoramento, CI/CD e estratégia de re-treinamento
+- **Part 1** — Problem definition, prior experiments, and success criteria
+- **Part 2** — Data pipeline, quality, and feature engineering
+- **Part 3** — Systematic experimentation with 4 models and Optuna
+- **Part 4** — Dimensionality reduction analysis (PCA, LDA, t-SNE)
+- **Part 5** — Final model selection and justification
+- **Part 6** — Deploy, monitoring, CI/CD, and retraining strategy

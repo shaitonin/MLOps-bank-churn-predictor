@@ -1,11 +1,11 @@
 """
-inference.py — Carrega o modelo de produção do MLflow e executa predições.
+inference.py — Loads the production MLflow model and runs predictions.
 
-Uso direto:
+Direct usage:
     from src.inference import ChurnPredictor
     predictor = ChurnPredictor()
-    result = predictor.predict(df)        # DataFrame com features
-    result = predictor.predict_single({   # dict com um cliente
+    result = predictor.predict(df)        # DataFrame with features
+    result = predictor.predict_single({   # dict with a single customer
         'Age': 42, 'Balance': 125000, ...
     })
 """
@@ -20,11 +20,11 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 
 class ChurnPredictor:
     """
-    Wrapper de inferência para o pipeline de churn.
+    Inference wrapper for the churn pipeline.
 
-    Carrega o modelo de duas formas (fallback automático):
-      1. MLflow Model Registry (nome + estágio 'Production')
-      2. Arquivo local outputs/models/pipeline_final.joblib
+    Loads the model in two ways (automatic fallback):
+      1. MLflow Model Registry (name + stage 'Production')
+      2. Local file outputs/models/pipeline_final.joblib
     """
 
     def __init__(
@@ -40,7 +40,7 @@ class ChurnPredictor:
         self._threshold = threshold if threshold is not None else self._schema.get('threshold', 0.40)
         self._load_model()
 
-    # ── Carregamento ─────────────────────────────────────────────────────────
+    # ── Loading ──────────────────────────────────────────────────────────────
 
     def _load_schema(self) -> dict:
         schema_path = ROOT_DIR / 'outputs' / 'models' / 'model_schema.json'
@@ -49,7 +49,7 @@ class ChurnPredictor:
         return {'threshold': 0.40, 'feature_columns': [], 'n_features': 20}
 
     def _load_model(self):
-        """Tenta MLflow primeiro, cai para arquivo local."""
+        """Try MLflow first, fall back to local file."""
         try:
             import mlflow
             import mlflow.sklearn
@@ -67,12 +67,12 @@ class ChurnPredictor:
             local_path = ROOT_DIR / 'outputs' / 'models' / 'pipeline_final.joblib'
             if not local_path.exists():
                 raise FileNotFoundError(
-                    'Modelo não encontrado. Execute notebooks/deploy.py primeiro.'
+                    'Model not found. Run notebooks/deploy.py first.'
                 )
             self._pipeline = joblib.load(local_path)
             self._source   = f'local:{local_path}'
 
-    # ── Inferência ───────────────────────────────────────────────────────────
+    # ── Inference ────────────────────────────────────────────────────────────
 
     def predict(
         self,
@@ -80,9 +80,9 @@ class ChurnPredictor:
         threshold: float | None = None,
     ) -> pd.DataFrame:
         """
-        Recebe DataFrame com features e devolve DataFrame com:
-          churn_probability  : probabilidade [0, 1]
-          churn_flag         : 1 se >= threshold, 0 caso contrário
+        Receives a feature DataFrame and returns a DataFrame with:
+          churn_probability  : probability [0, 1]
+          churn_flag         : 1 if >= threshold, 0 otherwise
           risk_level         : 'high' | 'medium' | 'low'
         """
         thr   = threshold if threshold is not None else self._threshold
@@ -106,7 +106,7 @@ class ChurnPredictor:
         customer: dict,
         threshold: float | None = None,
     ) -> dict:
-        """Recebe um dicionário com os dados de um cliente e retorna predição."""
+        """Receives a dictionary with a single customer and returns a prediction."""
         df  = pd.DataFrame([customer])
         out = self.predict(df, threshold=threshold)
         row = out.iloc[0]

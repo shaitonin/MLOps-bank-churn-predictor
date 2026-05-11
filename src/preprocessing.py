@@ -1,18 +1,18 @@
 """
-preprocessing.py — Transformadores de Pré-processamento e Feature Engineering.
+preprocessing.py — Preprocessing and Feature Engineering Transformers.
 
-Interface scikit-learn (BaseEstimator + TransformerMixin):
-  Cada classe herda de sklearn.base.BaseEstimator e TransformerMixin.
+scikit-learn interface (BaseEstimator + TransformerMixin):
+  Each class inherits from sklearn.base.BaseEstimator and TransformerMixin.
 
-  BaseEstimator  → fornece get_params() e set_params() automaticamente,
-                   necessários para GridSearchCV e clone() de Pipeline.
-                   REGRA: todos os parâmetros do __init__ devem ter o
-                   mesmo nome que o atributo de instância (ex: self.group_col).
+  BaseEstimator  → provides get_params() and set_params() automatically,
+                   required for GridSearchCV and Pipeline cloning.
+                   RULE: all __init__ parameters must have the same name as
+                   the instance attribute (e.g. self.group_col).
 
-  TransformerMixin → fornece fit_transform(X) automaticamente como
-                     self.fit(X).transform(X), compatível com sklearn.Pipeline.
+  TransformerMixin → provides fit_transform(X) automatically as
+                     self.fit(X).transform(X), compatible with sklearn.Pipeline.
 
-  Isso permite compor os transformadores em um Pipeline:
+  This allows composing transformers in a Pipeline:
     from sklearn.pipeline import Pipeline
     pipe = Pipeline([
         ('dropper',   ColumnDropper(...)),
@@ -25,15 +25,15 @@ Interface scikit-learn (BaseEstimator + TransformerMixin):
     ])
     pipe.fit_transform(df)
 
-Transformadores stateless (fit é no-op — retorna self sem aprender):
+Stateless transformers (fit is a no-op — returns self without learning):
   ColumnDropper, BinaryFlagTransformer, InteractionFeatureTransformer,
   RatioFeatureTransformer, AgeBinTransformer, CategoricalEncoder, FeatureSelector
 
-Transformadores stateful (fit aprende parâmetros dos dados de treino):
-  GroupMedianImputer        → aprende medianas por grupo
-  DataImputer               → aprende medianas, modas e constantes por coluna
-  StandardScalerTransformer → aprende média e desvio padrão (CreditScore, EstimatedSalary, Point Earned)
-  RobustScalerTransformer   → aprende mediana e IQR (Age com log1p, Balance)
+Stateful transformers (fit learns train data parameters):
+  GroupMedianImputer        → learns group medians
+  DataImputer               → learns medians, modes and constants per column
+  StandardScalerTransformer → learns mean and stddev (CreditScore, EstimatedSalary, Point Earned)
+  RobustScalerTransformer   → learns median and IQR (Age with log1p, Balance)
 """
 import numpy as np
 import pandas as pd
@@ -41,33 +41,32 @@ from typing import Any
 from sklearn.base import BaseEstimator, TransformerMixin
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1. Imputação Configurável por Coluna
+# 1. Configurable Column Imputation
 # ─────────────────────────────────────────────────────────────────────────────
 
 class DataImputer(BaseEstimator, TransformerMixin):
     """
-    Imputa valores ausentes usando estratégias configuradas por coluna.
+    Imputes missing values using column-specific configured strategies.
 
-    Estratégias suportadas (EDA Seção 8.3):
-    - "median"          : mediana global — para distribuições assimétricas (Age, Tenure)
-    - "constant"        : valor fixo (fill_value) — Balance → 0 (valor legítimo frequente)
-    - "mode"            : moda (valor mais frequente) — para categóricas e NumOfProducts
-    - "median_by_group" : mediana estratificada por grupo — CreditScore por Geography
+    Supported strategies (EDA Section 8.3):
+    - "median"          : global median — for skewed distributions (Age, Tenure)
+    - "constant"        : fixed value (fill_value) — Balance → 0 (common legit value)
+    - "mode"            : mode (most frequent value) — for categoricals and NumOfProducts
+    - "median_by_group" : group-stratified median — CreditScore by Geography
 
-    Por que estratégias diferenciadas?
-    - Balance: 36.17% de zeros são legítimos → fill_value=0, não mediana
-    - CreditScore: varia por região geográfica → mediana por Geography, não global
-    - Age: distribuição assimétrica (skew=1.01) → mediana (37) supera a média (38.9)
+    Why differentiated strategies?
+    - Balance: 36.17% zeros are legitimate → fill_value=0, not median
+    - CreditScore: varies by geographic region → median by Geography, not global
+    - Age: skewed distribution (skew=1.01) → median (37) is better than mean (38.9)
 
-    ⚠ AVISO MLOps — Data Leakage:
-    Transformer STATEFUL: aprende medianas e modas no fit() usando apenas
-    os dados de treino. Deve ser usado no Pipeline de modelagem, APÓS o
-    split treino/holdout — nunca antes.
+    ⚠ MLOps WARNING — Data Leakage:
+    Stateful transformer: learns medians and modes in fit() using only training data.
+    It must be used in the modeling Pipeline AFTER the train/holdout split — never before.
 
-    Atributos aprendidos no fit:
-        fill_values_ (dict): {coluna → valor de preenchimento aprendido}
-          Para "median_by_group": {"by_group": {grupo: mediana}, "global": mediana_global,
-                                    "group_col": nome_da_coluna_de_grupo}
+    Attributes learned in fit:
+        fill_values_ (dict): {column → learned fill value}
+          For "median_by_group": {"by_group": {group: median}, "global": global_median,
+                                    "group_col": group_column_name}
 
     Config (preprocessing.yaml → imputation):
         - column: "CreditScore"
@@ -80,7 +79,7 @@ class DataImputer(BaseEstimator, TransformerMixin):
           strategy: "median"
           fallback_value: 37
 
-    Exemplo (pipeline de modelagem):
+    Example (modeling pipeline):
         imp_cfg = config['imputation']
         imputer = DataImputer(imputation_config=imp_cfg, logger=logger)
         imputer.fit(X_train)
@@ -98,9 +97,9 @@ class DataImputer(BaseEstimator, TransformerMixin):
 
     def fit(self, X: pd.DataFrame, y=None) -> "DataImputer":
         """
-        Aprende o valor de preenchimento para cada coluna configurada.
+        Learns the fill value for each configured column.
 
-        ATENÇÃO MLOps: chamar fit() apenas no conjunto de treino.
+        MLOps WARNING: call fit() only on the training set.
         """
         self.fill_values_: dict = {}
 
@@ -111,7 +110,7 @@ class DataImputer(BaseEstimator, TransformerMixin):
             if col not in X.columns:
                 if self.logger:
                     self.logger.warning(
-                        "DataImputer.fit: coluna '%s' não encontrada — ignorada.", col
+                        "DataImputer.fit: column '%s' not found — skipped.", col
                     )
                 continue
 
@@ -133,8 +132,8 @@ class DataImputer(BaseEstimator, TransformerMixin):
                 if group_col not in X.columns:
                     if self.logger:
                         self.logger.warning(
-                            "DataImputer.fit: coluna de grupo '%s' não encontrada "
-                            "para '%s' — usando mediana global.", group_col, col
+                            "DataImputer.fit: group column '%s' not found "
+                            "for '%s' — using global median.", group_col, col
                         )
                     self.fill_values_[col] = float(X[col].median())
                 else:
@@ -147,13 +146,13 @@ class DataImputer(BaseEstimator, TransformerMixin):
             else:
                 if self.logger:
                     self.logger.warning(
-                        "DataImputer.fit: estratégia '%s' não suportada para '%s' — ignorada.",
+                        "DataImputer.fit: strategy '%s' not supported for '%s' — skipped.",
                         strategy, col,
                     )
                 continue
 
             self._log(
-                "DataImputer.fit: '%s' → strategy=%s | valor aprendido: %s",
+                "DataImputer.fit: '%s' → strategy=%s | learned value: %s",
                 col, strategy,
                 self.fill_values_[col] if strategy != "median_by_group"
                 else self.fill_values_[col]["by_group"],
@@ -163,13 +162,13 @@ class DataImputer(BaseEstimator, TransformerMixin):
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """
-        Preenche NaN em cada coluna com o valor aprendido no fit.
+        Fills NaN in each column with the value learned in fit.
 
-        Colunas sem NaN são mantidas intactas (operação segura).
+        Columns without NaN are kept intact (safe operation).
         """
         if not hasattr(self, "fill_values_"):
             raise RuntimeError(
-                "DataImputer não foi ajustado. Chame fit() antes de transform()."
+                "DataImputer has not been fitted. Call fit() before transform()."
             )
 
         X = X.copy()
@@ -208,31 +207,30 @@ class DataImputer(BaseEstimator, TransformerMixin):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1b. Imputação por Mediana de Grupo (mantida para compatibilidade)
+# 1b. Group Median Imputation (kept for compatibility)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class GroupMedianImputer(BaseEstimator, TransformerMixin):
     """
-    Imputa valores ausentes usando a mediana do grupo (estratificada).
+    Imputes missing values using group-based (stratified) median.
 
-    Por que mediana por grupo?
-    - CreditScore varia sistematicamente por Geography (France, Germany, Spain).
-    - Imputar com a mediana global ignora essa heterogeneidade regional.
-    - EDA Seção 8.3: "CreditScore → mediana por Geography (score varia por região)"
+    Why group median?
+    - CreditScore varies systematically by Geography (France, Germany, Spain).
+    - Imputing with global median ignores this regional heterogeneity.
+    - EDA Section 8.3: "CreditScore → median by Geography (score varies by region)"
 
-    ⚠ AVISO MLOps — Data Leakage:
-    Este transformador é STATEFUL: aprende as medianas no fit() usando apenas
-    os dados de treino. Deve ser aplicado DENTRO do Pipeline de modelagem,
-    APÓS o split treino/holdout — nunca antes.
+    ⚠ MLOps WARNING — Data Leakage:
+    This transformer is STATEFUL: it learns medians in fit() using only training data.
+    It must be applied INSIDE the modeling Pipeline AFTER the train/holdout split — never before.
 
-    Compatibilidade com sklearn.Pipeline:
-        BaseEstimator fornece get_params()/set_params() via introspecção dos
-        parâmetros do __init__ (group_col, target_col, logger).
-        TransformerMixin fornece fit_transform().
+    sklearn.Pipeline compatibility:
+        BaseEstimator provides get_params()/set_params() by introspecting
+        __init__ parameters (group_col, target_col, logger).
+        TransformerMixin provides fit_transform().
 
-    Atributos aprendidos no fit:
-        medians_       (dict): {valor_do_grupo → mediana}
-        global_median_ (float): fallback para grupos não vistos no fit
+    Attributes learned in fit:
+        medians_       (dict): {group_value → median}
+        global_median_ (float): fallback for groups not seen in fit
     """
 
     def __init__(
@@ -251,18 +249,18 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
 
     def fit(self, X: pd.DataFrame, y=None) -> "GroupMedianImputer":
         """
-        Aprende a mediana de target_col para cada valor de group_col.
+        Learns the median of target_col for each group_col value.
 
-        O parâmetro y=None existe por convenção da API scikit-learn —
-        não é utilizado (transformador não supervisionado).
+        The y=None parameter exists by scikit-learn API convention —
+        it is not used (unsupervised transformer).
 
         Raises:
-            KeyError: Se group_col ou target_col não existirem no DataFrame.
+            KeyError: If group_col or target_col are missing from the DataFrame.
         """
         missing_cols = [c for c in [self.group_col, self.target_col] if c not in X.columns]
         if missing_cols:
             raise KeyError(
-                f"GroupMedianImputer.fit: colunas ausentes no DataFrame: {missing_cols}"
+                f"GroupMedianImputer.fit: missing columns in DataFrame: {missing_cols}"
             )
 
         self.medians_ = (
@@ -273,7 +271,7 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
         self.global_median_ = float(X[self.target_col].median())
 
         self._log(
-            "GroupMedianImputer.fit: medianas aprendidas por '%s' para '%s': %s",
+            "GroupMedianImputer.fit: medians learned by '%s' for '%s': %s",
             self.group_col, self.target_col,
             {k: round(v, 1) for k, v in self.medians_.items()},
         )
@@ -281,13 +279,13 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """
-        Preenche NaN em target_col com a mediana do grupo correspondente.
+        Fills NaN in target_col with the corresponding group median.
 
-        Linhas cujo grupo não foi visto no fit recebem a mediana global.
+        Rows whose group was not seen in fit receive the global median.
         """
         if not hasattr(self, "medians_"):
             raise RuntimeError(
-                "GroupMedianImputer não foi ajustado. Chame fit() antes de transform()."
+                "GroupMedianImputer has not been fitted. Call fit() before transform()."
             )
 
         X = X.copy()
@@ -302,33 +300,33 @@ class GroupMedianImputer(BaseEstimator, TransformerMixin):
         n_after = int(X[self.target_col].isna().sum())
 
         self._log(
-            "GroupMedianImputer.transform: '%s' — NaN antes=%d, depois=%d",
+            "GroupMedianImputer.transform: '%s' — NaN before=%d, after=%d",
             self.target_col, n_before, n_after,
         )
         return X
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. Remoção de Identificadores
+# 2. Identifier Removal
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ColumnDropper(BaseEstimator, TransformerMixin):
     """
-    Remove colunas sem valor preditivo (identificadores e dados pessoais).
+    Removes columns with no predictive value (identifiers and personal data).
 
-    Por que remover identificadores?
-    - RowNumber: índice sequencial sem relação causal com churn.
-    - CustomerId: ID único — se visto em treino, o modelo pode memorizar
-      clientes específicos em vez de aprender padrões generalizáveis.
-    - Surname: texto de identificação pessoal sem poder preditivo.
-    - EDA Seção 8.1: COLS_TO_DROP = ["RowNumber", "CustomerId", "Surname"]
+    Why drop identifiers?
+    - RowNumber: sequential index with no causal relation to churn.
+    - CustomerId: unique ID — if seen during training, the model may memorize
+      specific customers instead of learning generalizable patterns.
+    - Surname: personal identification text with no predictive power.
+    - EDA Section 8.1: COLS_TO_DROP = ["RowNumber", "CustomerId", "Surname"]
 
     Config (preprocessing.yaml → drop_columns):
         - "RowNumber"
         - "CustomerId"
         - "Surname"
 
-    Exemplo:
+    Example:
         dropper = ColumnDropper(columns=config['drop_columns'], logger=logger)
         df = dropper.fit_transform(df)
     """
@@ -351,33 +349,33 @@ class ColumnDropper(BaseEstimator, TransformerMixin):
 
         if skipped and self.logger:
             self.logger.warning(
-                "ColumnDropper: colunas não encontradas (ignoradas): %s", skipped
+                "ColumnDropper: columns not found (ignored): %s", skipped
             )
 
         X.drop(columns=to_drop, inplace=True)
         self._log(
-            "ColumnDropper: %d colunas removidas: %s", len(to_drop), to_drop
+            "ColumnDropper: %d columns dropped: %s", len(to_drop), to_drop
         )
         return X
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 3. Flags Binárias
+# 3. Binary Flags
 # ─────────────────────────────────────────────────────────────────────────────
 
 class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
     """
-    Adiciona colunas binárias (0/1) indicando padrões de negócio relevantes.
+    Adds binary (0/1) indicator columns for relevant business patterns.
 
-    Por que flags binárias?
-    - Balance == 0: 36.17% dos clientes — dois perfis distintos de uso bancário.
-      Modelos precisam reconhecer explicitamente que saldo zero é um estado,
-      não um outlier a ser imputado ou ignorado.
-    - NumOfProducts >= 3: limiar de saturação abrupto (churn de 82.7%–100%).
-      Sem a flag, um modelo precisaria descobrir esse limiar sozinho.
+    Why binary flags?
+    - Balance == 0: 36.17% of customers — two distinct banking usage profiles.
+      Models need to explicitly recognize zero balance as a state,
+      not an outlier to impute or ignore.
+    - NumOfProducts >= 3: abrupt saturation threshold (churn 82.7%–100%).
+      Without the flag, a model would need to discover this threshold on its own.
 
-    Operadores suportados:
-      "==" (padrão): X[column] == value
+    Supported operators:
+      "==" (default): X[column] == value
       ">="         : X[column] >= value
       "<="         : X[column] <= value
 
@@ -393,7 +391,7 @@ class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
           new_column: "HighRiskProducts"
           inference_safe: true
 
-    Exemplo:
+    Example:
         flags_cfg = config['binary_flags']
         transformer = BinaryFlagTransformer(flags=flags_cfg, logger=logger)
         df = transformer.fit_transform(df)
@@ -421,7 +419,7 @@ class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
             if col not in X.columns:
                 if self.logger:
                     self.logger.warning(
-                        "BinaryFlagTransformer: coluna '%s' não encontrada — flag '%s' ignorada.",
+                        "BinaryFlagTransformer: column '%s' not found — flag '%s' skipped.",
                         col, new_col,
                     )
                 continue
@@ -435,7 +433,7 @@ class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
             else:
                 if self.logger:
                     self.logger.warning(
-                        "BinaryFlagTransformer: operador '%s' não suportado para '%s' — ignorada.",
+                        "BinaryFlagTransformer: operator '%s' not supported for '%s' — skipped.",
                         operator, new_col,
                     )
                 continue
@@ -443,36 +441,36 @@ class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
             X[new_col] = mask.astype(int)
             n_flagged = int(X[new_col].sum())
             self._log(
-                "BinaryFlagTransformer: '%s' %s %s → '%s': %d linhas flagadas (%.2f%%)",
+                "BinaryFlagTransformer: '%s' %s %s → '%s': %d rows flagged (%.2f%%)",
                 col, operator, val, new_col, n_flagged, 100 * n_flagged / len(X),
             )
         return X
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. Features de Interação
+# 4. Interaction Features
 # ─────────────────────────────────────────────────────────────────────────────
 
 class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
     """
-    Cria features de interação e compostas para capturar padrões não-lineares.
+    Creates interaction and composite features to capture non-linear patterns.
 
-    Tipos suportados:
+    Supported types:
 
     product_complement: col_a × (1 − col_b)
       AgeInactivity = Age × (1 − IsActiveMember)
-      Amplifica o sinal de inatividade em clientes mais velhos — o grupo
-      com maior propensão ao churn. Um cliente de 50 anos inativo terá
-      AgeInactivity=50; um ativo terá 0.
+      Amplifies the inactivity signal for older customers — the group
+      with higher churn propensity. An inactive 50-year-old will have
+      AgeInactivity=50; an active customer will have 0.
 
-    engagement_composite: score composto de engajamento do cliente
+    engagement_composite: customer engagement composite score
       EngagementScore = IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance
-      Componentes positivos: membro ativo (+1), exatamente 2 produtos (+1, ponto
-      de menor churn na EDA), possui cartão de crédito (+1).
-      Componente negativo: saldo zero (−1, desengajamento financeiro).
-      Range resultante: -1 (totalmente desengajado) a 3 (muito engajado).
-      ⚠ Requer HasZeroBalance criado pelo BinaryFlagTransformer.
-      Ordem obrigatória das colunas: [IsActiveMember, NumOfProducts, HasCrCard, HasZeroBalance]
+      Positive components: active member (+1), exactly 2 products (+1, the
+      lowest churn point in EDA), has credit card (+1).
+      Negative component: zero balance (−1, financial disengagement).
+      Resulting range: -1 (fully disengaged) to 3 (highly engaged).
+      ⚠ Requires HasZeroBalance created by BinaryFlagTransformer.
+      Required column order: [IsActiveMember, NumOfProducts, HasCrCard, HasZeroBalance]
 
     Config (preprocessing.yaml → interaction_features):
         - name: "AgeInactivity"
@@ -483,7 +481,7 @@ class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
           type: "engagement_composite"
           columns: ["IsActiveMember", "NumOfProducts", "HasCrCard", "HasZeroBalance"]
 
-    Exemplo:
+    Example:
         interact_cfg = config['interaction_features']
         transformer = InteractionFeatureTransformer(features_config=interact_cfg, logger=logger)
         df = transformer.fit_transform(df)
@@ -515,7 +513,7 @@ class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
                 if missing:
                     if self.logger:
                         self.logger.warning(
-                            "InteractionFeatureTransformer: colunas ausentes %s — '%s' ignorada.",
+                            "InteractionFeatureTransformer: missing columns %s — '%s' skipped.",
                             missing, name,
                         )
                     continue
@@ -528,7 +526,7 @@ class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
                 if missing:
                     if self.logger:
                         self.logger.warning(
-                            "InteractionFeatureTransformer: colunas ausentes %s — '%s' ignorada.",
+                            "InteractionFeatureTransformer: missing columns %s — '%s' skipped.",
                             missing, name,
                         )
                     continue
@@ -543,31 +541,31 @@ class InteractionFeatureTransformer(BaseEstimator, TransformerMixin):
             else:
                 if self.logger:
                     self.logger.warning(
-                        "InteractionFeatureTransformer: tipo '%s' não suportado para '%s' — ignorada.",
+                        "InteractionFeatureTransformer: type '%s' not supported for '%s' — skipped.",
                         ftype, name,
                     )
 
-        self._log("InteractionFeatureTransformer: features criadas: %s", created)
+        self._log("InteractionFeatureTransformer: features created: %s", created)
         return X
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 5. Features de Razão
+# 5. Ratio Features
 # ─────────────────────────────────────────────────────────────────────────────
 
 class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
     """
-    Cria features de razão: numerador / (denominador + offset).
+    Creates ratio features: numerator / (denominator + offset).
 
-    Por que BalanceSalaryRatio?
-    - Clientes com saldo alto relativo ao salário são os mais disputados
-      pela concorrência — exatamente o perfil com maior churn no dataset.
-    - O offset (denominator_offset=1) no denominador protege contra divisão
-      por zero sem distorcer valores onde EstimatedSalary > 0.
+    Why BalanceSalaryRatio?
+    - Customers with high balance relative to salary are the most targeted
+      by competitors — exactly the profile with the highest churn in the dataset.
+    - The offset (denominator_offset=1) protects against division by zero
+      without distorting values where EstimatedSalary > 0.
 
-    Divisão segura:
-    - (denominador + offset) == 0 → NaN (evita divisão por zero se offset=0)
-    - Inf substituído por NaN
+    Safe division:
+    - (denominator + offset) == 0 → NaN (avoids division by zero if offset=0)
+    - Inf replaced by NaN
 
     Config (preprocessing.yaml → ratio_features):
         - name: "BalanceSalaryRatio"
@@ -575,7 +573,7 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
           denominator: "EstimatedSalary"
           denominator_offset: 1
 
-    Exemplo:
+    Example:
         ratios_cfg = config['ratio_features']
         transformer = RatioFeatureTransformer(ratios=ratios_cfg, logger=logger)
         df = transformer.fit_transform(df)
@@ -605,7 +603,7 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
             if num not in X.columns or den not in X.columns:
                 if self.logger:
                     self.logger.warning(
-                        "RatioFeatureTransformer: colunas '%s' ou '%s' ausentes — '%s' ignorada.",
+                        "RatioFeatureTransformer: columns '%s' or '%s' missing — '%s' skipped.",
                         num, den, name,
                     )
                 continue
@@ -616,29 +614,29 @@ class RatioFeatureTransformer(BaseEstimator, TransformerMixin):
             )
             created.append(name)
 
-        self._log("RatioFeatureTransformer: features criadas: %s", created)
+        self._log("RatioFeatureTransformer: features created: %s", created)
         return X
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Faixas Etárias
+# 6. Age Bins
 # ─────────────────────────────────────────────────────────────────────────────
 
 class AgeBinTransformer(BaseEstimator, TransformerMixin):
     """
-    Cria faixa etária (AgeGroup) a partir da coluna de idade.
+    Creates age bins (AgeGroup) from the age column.
 
-    Por que discretizar a idade?
-    - A relação entre idade e churn é não-linear: pico entre 40–60 anos.
-    - EDA: idade média dos que saíram = 44.8 anos vs 37.4 dos que ficaram
-      (Cohen's d = 0.747 — efeito médio-grande).
-    - Bins permitem que modelos lineares capturem esse efeito curvilíneo
-      sem exigir transformação polinomial.
+    Why discretize age?
+    - The relationship between age and churn is non-linear: peak between 40–60.
+    - EDA: average age of churned = 44.8 years vs 37.4 of retained
+      (Cohen's d = 0.747 — medium-large effect).
+    - Bins allow linear models to capture this curved effect
+      without requiring polynomial transformation.
 
-    Encoding ordinal (ordinal_encoding: true):
-    - Converte labels categóricos para inteiros (0, 1, 2, 3, 4).
-    - Preserva a ordem natural da idade (importante para GBM/XGBoost).
-    - Para regressão linear: aplicar OHE sobre AgeGroup no pipeline de modelagem.
+    Ordinal encoding (ordinal_encoding: true):
+    - Converts categorical labels to integers (0, 1, 2, 3, 4).
+    - Preserves the natural order of age (important for GBM/XGBoost).
+    - For linear regression: apply OHE on AgeGroup in the modeling pipeline.
 
     Config (preprocessing.yaml → age_group):
         column: "Age"
@@ -651,7 +649,7 @@ class AgeBinTransformer(BaseEstimator, TransformerMixin):
           "30-40": 1
           ...
 
-    Exemplo:
+    Example:
         age_cfg = config['age_group']
         transformer = AgeBinTransformer(age_config=age_cfg, logger=logger)
         df = transformer.fit_transform(df)
@@ -679,7 +677,7 @@ class AgeBinTransformer(BaseEstimator, TransformerMixin):
         if col not in X.columns:
             if self.logger:
                 self.logger.warning(
-                    "AgeBinTransformer: coluna '%s' não encontrada — '%s' ignorada.",
+                    "AgeBinTransformer: column '%s' not found — '%s' skipped.",
                     col, new_col,
                 )
             return X
@@ -692,7 +690,7 @@ class AgeBinTransformer(BaseEstimator, TransformerMixin):
             n_unknown = int(X[new_col].isna().sum())
             if n_unknown > 0 and self.logger:
                 self.logger.warning(
-                    "AgeBinTransformer: %d valores de '%s' não mapeados → NaN",
+                    "AgeBinTransformer: %d values of '%s' were not mapped → NaN",
                     n_unknown, new_col,
                 )
 
@@ -704,32 +702,32 @@ class AgeBinTransformer(BaseEstimator, TransformerMixin):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 7. Encoding de Variáveis Categóricas
+# 7. Categorical Variable Encoding
 # ─────────────────────────────────────────────────────────────────────────────
 
 class CategoricalEncoder(BaseEstimator, TransformerMixin):
     """
-    Aplica encoding em múltiplas variáveis categóricas.
+    Applies encoding to multiple categorical variables.
 
-    Métodos suportados:
+    Supported methods:
 
-    one_hot: pd.get_dummies com prefixo configurável
+    one_hot: pd.get_dummies with configurable prefix
       Geography → geo_France, geo_Germany, geo_Spain
       Card Type → card_DIAMOND, card_GOLD, card_PLATINUM, card_SILVER
-      drop_first=False mantém todas as categorias para máxima interpretabilidade.
+      drop_first=False keeps all categories for maximum interpretability.
 
-    binary: mapeamento manual para 0/1
+    binary: manual mapping to 0/1
       Gender → Gender_encoded (Male=0, Female=1)
-      Mais compacto que OHE para variáveis com exatamente 2 categorias.
+      More compact than OHE for variables with exactly 2 categories.
 
-    Por que OHE para Geography e não ordinal?
-    - Não há ordem natural entre France, Germany, Spain.
-    - OHE garante que o modelo trate cada país como preditor independente.
-    - EDA: Germany tem churn 2× maior (Cramér's V=0.17) — efeito não-linear
-      que seria distorcido por um encoding ordinal arbitrário.
+    Why OHE for Geography and not ordinal?
+    - There is no natural order among France, Germany, Spain.
+    - OHE ensures the model treats each country as an independent predictor.
+    - EDA: Germany has churn 2× higher (Cramér's V=0.17) — a non-linear effect
+      that would be distorted by arbitrary ordinal encoding.
 
-    As colunas categóricas originais são mantidas no DataFrame para
-    inspeção. O FeatureSelector ao final exclui o que não entra no modelo.
+    Original categorical columns are kept in the DataFrame for
+    inspection. FeatureSelector later drops those that are not used in the model.
 
     Config (preprocessing.yaml → categorical_encoding):
         - column: "Geography"
@@ -741,7 +739,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
           mapping: {"Male": 0, "Female": 1}
           new_column: "Gender_encoded"
 
-    Exemplo:
+    Example:
         enc_cfg = config['categorical_encoding']
         encoder = CategoricalEncoder(encoding_config=enc_cfg, logger=logger)
         df = encoder.fit_transform(df)
@@ -768,7 +766,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
             if col not in X.columns:
                 if self.logger:
                     self.logger.warning(
-                        "CategoricalEncoder: coluna '%s' não encontrada — encoding ignorado.",
+                        "CategoricalEncoder: column '%s' not found — encoding skipped.",
                         col,
                     )
                 continue
@@ -783,7 +781,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
                 ).astype(int)
                 X = pd.concat([X, dummies], axis=1)
                 self._log(
-                    "CategoricalEncoder: OHE '%s' (prefixo='%s') → %s",
+                    "CategoricalEncoder: OHE '%s' (prefix='%s') → %s",
                     col, prefix, list(dummies.columns),
                 )
 
@@ -794,18 +792,18 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
                 n_unknown = int(X[new_col].isna().sum())
                 if n_unknown > 0 and self.logger:
                     self.logger.warning(
-                        "CategoricalEncoder: %d valores de '%s' não mapeados → NaN",
+                        "CategoricalEncoder: %d values of '%s' were not mapped → NaN",
                         n_unknown, col,
                     )
                 self._log(
-                    "CategoricalEncoder: binary '%s' → '%s' (mapa=%s)",
+                    "CategoricalEncoder: binary '%s' → '%s' (map=%s)",
                     col, new_col, mapping,
                 )
 
             else:
                 if self.logger:
                     self.logger.warning(
-                        "CategoricalEncoder: método '%s' não suportado para '%s' — ignorado.",
+                        "CategoricalEncoder: method '%s' not supported for '%s' — skipped.",
                         method, col,
                     )
 
@@ -813,23 +811,23 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 8. Seleção de Features
+# 8. Feature Selection
 # ─────────────────────────────────────────────────────────────────────────────
 
 class FeatureSelector(BaseEstimator, TransformerMixin):
     """
-    Seleciona o conjunto final de features para modelagem.
+    Selects the final set of features for modeling.
 
-    Por que seleção explícita?
-    - Após as transformações, o DataFrame tem 30+ colunas (originais + engineered).
-    - Colunas categóricas originais (Geography, Gender, Card Type) são substituídas
-      pelo encoding — mantê-las causaria redundância.
-    - Manter apenas o que vai para o modelo previne vazamento acidental de dados.
+    Why explicit selection?
+    - After transformations, the DataFrame has 30+ columns (original + engineered).
+    - Original categorical columns (Geography, Gender, Card Type) are replaced
+      by encoding — keeping them would cause redundancy.
+    - Keeping only what goes into the model prevents accidental data leakage.
 
-    Comportamento tolerante:
-    - Colunas ausentes geram WARNING (não exceção) — permite que o pipeline
-      continue mesmo que uma transformação anterior tenha sido pulada.
-    - Apenas as colunas disponíveis são selecionadas.
+    Tolerant behavior:
+    - Missing columns generate a WARNING (not an exception) — allowing the pipeline
+      to continue even if a prior transformation was skipped.
+    - Only available columns are selected.
 
     Config (preprocessing.yaml → feature_selection.features_to_keep):
         - "CreditScore"
@@ -837,7 +835,7 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
         - "geo_France"
         - ...
 
-    Exemplo:
+    Example:
         sel_cfg = config['feature_selection']
         selector = FeatureSelector(features_to_keep=sel_cfg['features_to_keep'], logger=logger)
         df = selector.fit_transform(df)
@@ -852,12 +850,12 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
             self.logger.info(msg, *args)
 
     def fit(self, X: pd.DataFrame, y=None) -> "FeatureSelector":
-        """Valida que todas as features configuradas existem no DataFrame."""
+        """Validates that all configured features exist in the DataFrame."""
         missing = [c for c in self.features_to_keep if c not in X.columns]
         if missing and self.logger:
             self.logger.warning(
-                "FeatureSelector.fit: %d colunas da config ausentes no DataFrame "
-                "(serão ignoradas): %s",
+                "FeatureSelector.fit: %d config columns missing from DataFrame "
+                "(will be ignored): %s",
                 len(missing), missing,
             )
         return self
@@ -868,12 +866,12 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
 
         if dropped > 0 and self.logger:
             self.logger.warning(
-                "FeatureSelector.transform: %d/%d colunas solicitadas ausentes — ignoradas.",
+                "FeatureSelector.transform: %d/%d requested columns missing — ignored.",
                 dropped, len(self.features_to_keep),
             )
 
         self._log(
-            "FeatureSelector.transform: %d/%d features selecionadas | shape: %s → %s",
+            "FeatureSelector.transform: %d/%d features selected | shape: %s → %s",
             len(available), len(self.features_to_keep),
             X.shape, (len(X), len(available)),
         )
@@ -881,42 +879,42 @@ class FeatureSelector(BaseEstimator, TransformerMixin):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 9. Escalonamento (StandardScaler)
+# 9. Scaling (StandardScaler)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class StandardScalerTransformer(BaseEstimator, TransformerMixin):
     """
-    Aplica Z-score normalization: z = (x − μ) / σ.
+    Applies Z-score normalization: z = (x − μ) / σ.
 
-    Por que StandardScaler?
-    - Regressão logística, SVM e KNN são sensíveis à escala das features.
-    - Gradient boosting e Random Forest NÃO precisam de escalonamento —
-      mas manter o dataset escalado facilita a comparação entre modelos.
-    - Binárias (0/1) e ordinais têm escala interpretável → não escalonar.
+    Why StandardScaler?
+    - Logistic regression, SVM and KNN are sensitive to feature scale.
+    - Gradient boosting and Random Forest do NOT require scaling —
+      but keeping the dataset scaled eases model comparison.
+    - Binary (0/1) and ordinal features have interpretable scale → do not scale.
 
-    EDA Seção 8.1 — Técnicas por variável:
-      CreditScore      → StandardScaler (distribuição quase normal, skew=-0.07)
-      EstimatedSalary  → StandardScaler (uniforme, sem outliers)
-      Point Earned     → StandardScaler (uniforme, sem outliers)
-      Age              → RobustScaler   (assimétrica, skew=+1.01) — aplicar no modelo
-      Balance          → RobustScaler   (bimodal, 36% zeros)      — aplicar no modelo
-      Tenure           → MinMaxScaler ou nenhum (uniforme discreta 0–10)
-      NumOfProducts    → nenhum (tratar como ordinal)
+    EDA Section 8.1 — techniques by variable:
+      CreditScore      → StandardScaler (near-normal distribution, skew=-0.07)
+      EstimatedSalary  → StandardScaler (uniform, no outliers)
+      Point Earned     → StandardScaler (uniform, no outliers)
+      Age              → RobustScaler   (skewed, skew=+1.01) — apply in modeling
+      Balance          → RobustScaler   (bimodal, 36% zeros)      — apply in modeling
+      Tenure           → MinMaxScaler or none (uniform discrete 0–10)
+      NumOfProducts    → none (treat as ordinal)
 
-    ⚠ AVISO MLOps — Data Leakage:
-    Este transformador é STATEFUL: aprende média e desvio padrão no fit()
-    usando apenas os dados de treino. Deve ser aplicado DENTRO do Pipeline
-    de modelagem, APÓS o split treino/holdout — nunca antes.
+    ⚠ MLOps WARNING — Data Leakage:
+    This transformer is STATEFUL: it learns mean and standard deviation in fit()
+    using only training data. It must be applied INSIDE the modeling Pipeline,
+    AFTER the train/holdout split — never before.
 
-    Parâmetros aprendidos no fit (só no dataset de treino!):
-        mean_  (dict): {coluna: média}
-        std_   (dict): {coluna: desvio padrão}
+    Parameters learned in fit (only on the training dataset!):
+        mean_  (dict): {column: mean}
+        std_   (dict): {column: standard deviation}
 
-    Colunas com std=0 são ignoradas (constantes — sem informação).
+    Columns with std=0 are ignored (constant — no information).
 
-    Exemplo (pipeline de modelagem):
+    Example (modeling pipeline):
         scaler = StandardScalerTransformer(columns=scale_cols, logger=logger)
-        scaler.fit(X_train)            # aprende apenas no treino
+        scaler.fit(X_train)            # learns only on training data
         X_train_sc = scaler.transform(X_train)
         X_test_sc  = scaler.transform(X_test)
     """
@@ -931,10 +929,10 @@ class StandardScalerTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X: pd.DataFrame, y=None) -> "StandardScalerTransformer":
         """
-        Aprende média e desvio padrão das colunas especificadas.
+        Learns mean and standard deviation of the specified columns.
 
-        ATENÇÃO MLOps: sempre chamar fit() apenas no conjunto de treino.
-        Usar transform() no conjunto de validação/teste para evitar data leakage.
+        MLOps WARNING: always call fit() only on the training set.
+        Use transform() on validation/test sets to avoid data leakage.
         """
         self.mean_: dict[str, float] = {}
         self.std_: dict[str, float] = {}
@@ -951,7 +949,7 @@ class StandardScalerTransformer(BaseEstimator, TransformerMixin):
             if sigma == 0:
                 if self.logger:
                     self.logger.warning(
-                        "StandardScalerTransformer.fit: '%s' tem std=0 (constante) — ignorada.",
+                        "StandardScalerTransformer.fit: '%s' has std=0 (constant) — skipped.",
                         col,
                     )
                 continue
@@ -961,24 +959,24 @@ class StandardScalerTransformer(BaseEstimator, TransformerMixin):
 
         if skipped and self.logger:
             self.logger.warning(
-                "StandardScalerTransformer.fit: colunas ausentes ignoradas: %s", skipped
+                "StandardScalerTransformer.fit: missing columns ignored: %s", skipped
             )
 
         self._log(
-            "StandardScalerTransformer.fit: parâmetros aprendidos para %d colunas.",
+            "StandardScalerTransformer.fit: parameters learned for %d columns.",
             len(self.mean_),
         )
         return self
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """
-        Aplica Z-score nas colunas ajustadas no fit.
+        Applies Z-score scaling to columns fitted in fit.
 
-        Colunas não vistas no fit são mantidas sem alteração.
+        Columns not seen in fit are left unchanged.
         """
         if not hasattr(self, "mean_"):
             raise RuntimeError(
-                "StandardScalerTransformer não foi ajustado. Chame fit() antes de transform()."
+                "StandardScalerTransformer has not been fitted. Call fit() before transform()."
             )
 
         X = X.copy()
@@ -991,55 +989,55 @@ class StandardScalerTransformer(BaseEstimator, TransformerMixin):
             scaled.append(col)
 
         self._log(
-            "StandardScalerTransformer.transform: %d colunas escalonadas (z-score).",
+            "StandardScalerTransformer.transform: %d columns scaled (z-score).",
             len(scaled),
         )
         return X
 
     @property
     def scale_params(self) -> pd.DataFrame:
-        """Retorna DataFrame com média e desvio padrão aprendidos (útil para auditoria)."""
+        """Returns a DataFrame with learned mean and standard deviation (useful for auditing)."""
         return pd.DataFrame(
             {"mean": self.mean_, "std": self.std_}
         ).rename_axis("feature")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 10. Escalonamento Robusto (RobustScaler)
+# 10. Robust Scaling (RobustScaler)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class RobustScalerTransformer(BaseEstimator, TransformerMixin):
     """
-    Aplica escalonamento robusto: z = (x − mediana) / IQR.
+    Applies robust scaling: z = (x − median) / IQR.
 
-    Por que RobustScaler para Age e Balance?
-    - Age: distribuição assimétrica (skew=+1.01) com outliers válidos de clientes
-      idosos até 92 anos. StandardScaler seria distorcido pela cauda longa —
-      média e desvio padrão são influenciados pelos extremos.
-    - Balance: distribuição bimodal com 36% de zeros. Mediana e IQR capturam
-      melhor a dispersão real do que média e desvio padrão.
+    Why RobustScaler for Age and Balance?
+    - Age: skewed distribution (skew=+1.01) with valid outliers of older customers
+      up to age 92. StandardScaler would be distorted by the long tail —
+      mean and standard deviation are influenced by extremes.
+    - Balance: bimodal distribution with 36% zeros. Median and IQR better capture
+      true dispersion than mean and standard deviation.
 
-    Log transform opcional (log_columns):
-    - Age recebe np.log1p (log(1+x)) antes do RobustScaler para comprimir
-      a cauda direita e aproximar a distribuição da normalidade.
-    - np.log1p é preferível a np.log pois é compatível com valor zero.
-    - O log transform é aprendido implicitamente: mediana e IQR são calculados
-      sobre a série já transformada (log1p(Age)), garantindo consistência entre
-      fit e transform.
+    Optional log transform (log_columns):
+    - Age receives np.log1p (log(1+x)) before RobustScaler to compress
+      the right tail and approximate normality.
+    - np.log1p is preferable to np.log because it supports zero values.
+    - The log transform is learned implicitly: median and IQR are calculated
+      on the already transformed series (log1p(Age)), ensuring consistency between
+      fit and transform.
 
-    ⚠ AVISO MLOps — Data Leakage:
-    STATEFUL: aprende mediana e IQR no fit() usando apenas os dados de treino.
-    Deve ser aplicado DENTRO do Pipeline de modelagem, APÓS o split treino/holdout.
+    ⚠ MLOps WARNING — Data Leakage:
+    Stateful: learns median and IQR in fit() using only training data.
+    Must be applied INSIDE the modeling Pipeline, AFTER the train/holdout split.
 
-    Parâmetros aprendidos no fit:
-        median_ (dict): {coluna: mediana (da série pós log1p se aplicável)}
-        iqr_    (dict): {coluna: IQR Q75 − Q25 (da série pós log1p se aplicável)}
+    Parameters learned in fit:
+        median_ (dict): {column: median (of post-log1p series if applicable)}
+        iqr_    (dict): {column: IQR Q75 − Q25 (of post-log1p series if applicable)}
 
     Config (preprocessing.yaml → scaling.robust_columns / log_transform_before_robust):
         robust_columns: ["Age", "Balance"]
         log_transform_before_robust: ["Age"]
 
-    Exemplo (pipeline de modelagem — Regressão Logística):
+    Example (modeling pipeline — Logistic Regression):
         robust_cfg = config['scaling']
         scaler = RobustScalerTransformer(
             columns=robust_cfg['robust_columns'],
@@ -1067,10 +1065,10 @@ class RobustScalerTransformer(BaseEstimator, TransformerMixin):
 
     def fit(self, X: pd.DataFrame, y=None) -> "RobustScalerTransformer":
         """
-        Aprende mediana e IQR das colunas especificadas.
+        Learns median and IQR of the specified columns.
 
-        Para colunas em log_columns, calcula mediana e IQR sobre log1p(série).
-        ATENÇÃO MLOps: sempre chamar fit() apenas no conjunto de treino.
+        For columns in log_columns, computes median and IQR on log1p(series).
+        MLOps WARNING: always call fit() only on the training set.
         """
         self.median_: dict[str, float] = {}
         self.iqr_: dict[str, float] = {}
@@ -1092,7 +1090,7 @@ class RobustScalerTransformer(BaseEstimator, TransformerMixin):
             if iqr == 0:
                 if self.logger:
                     self.logger.warning(
-                        "RobustScalerTransformer.fit: '%s' tem IQR=0 (constante) — ignorada.",
+                        "RobustScalerTransformer.fit: '%s' has IQR=0 (constant) — skipped.",
                         col,
                     )
                 continue
@@ -1101,7 +1099,7 @@ class RobustScalerTransformer(BaseEstimator, TransformerMixin):
             self.iqr_[col] = iqr
 
             self._log(
-                "RobustScalerTransformer.fit: '%s'%s → mediana=%.4f | IQR=%.4f",
+                "RobustScalerTransformer.fit: '%s'%s → median=%.4f | IQR=%.4f",
                 col,
                 " (log1p)" if col in self.log_columns else "",
                 self.median_[col],
@@ -1110,25 +1108,25 @@ class RobustScalerTransformer(BaseEstimator, TransformerMixin):
 
         if skipped and self.logger:
             self.logger.warning(
-                "RobustScalerTransformer.fit: colunas ausentes ignoradas: %s", skipped
+                "RobustScalerTransformer.fit: missing columns ignored: %s", skipped
             )
 
         self._log(
-            "RobustScalerTransformer.fit: parâmetros aprendidos para %d colunas.",
+            "RobustScalerTransformer.fit: parameters learned for %d columns.",
             len(self.median_),
         )
         return self
 
     def transform(self, X: pd.DataFrame, y=None) -> pd.DataFrame:
         """
-        Aplica escalonamento robusto nas colunas ajustadas no fit.
+        Applies robust scaling to columns fitted in fit.
 
-        Para colunas em log_columns, aplica log1p antes de escalonar.
-        Colunas não vistas no fit são mantidas sem alteração.
+        For columns in log_columns, applies log1p before scaling.
+        Columns not seen in fit are left unchanged.
         """
         if not hasattr(self, "median_"):
             raise RuntimeError(
-                "RobustScalerTransformer não foi ajustado. Chame fit() antes de transform()."
+                "RobustScalerTransformer has not been fitted. Call fit() before transform()."
             )
 
         X = X.copy()
@@ -1146,14 +1144,14 @@ class RobustScalerTransformer(BaseEstimator, TransformerMixin):
             scaled.append(col)
 
         self._log(
-            "RobustScalerTransformer.transform: %d colunas escalonadas (robust).",
+            "RobustScalerTransformer.transform: %d columns scaled (robust).",
             len(scaled),
         )
         return X
 
     @property
     def scale_params(self) -> pd.DataFrame:
-        """Retorna DataFrame com mediana e IQR aprendidos (útil para auditoria)."""
+        """Returns a DataFrame with learned median and IQR (useful for auditing)."""
         return pd.DataFrame(
             {"median": self.median_, "iqr": self.iqr_}
         ).rename_axis("feature")

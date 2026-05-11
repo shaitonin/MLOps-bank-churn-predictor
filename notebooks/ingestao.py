@@ -1,57 +1,57 @@
 # %%
-# Configuração do Ambiente
+# Environment setup
 import sys
 from pathlib import Path
 # %%
-# definições
-ROOT_DIR = Path(__file__).resolve().parent.parent #vai criar um path para a pasta principal (Projeto MLOps), se eu quiser so o path desse arquivo aqui eh so tirar o parentes.parents
+# definitions
+ROOT_DIR = Path(__file__).resolve().parent.parent # creates a path to the main project folder (MLOps project); if I only want this file path, remove .parent.parent
 SECRETS_PATH = ROOT_DIR / 'secrets.env'
 CONFIG_DIR = ROOT_DIR / 'config'
 PIPELINE_CONFIG = CONFIG_DIR / 'pipeline.yaml'
 DATA_CONFIG = CONFIG_DIR / 'data.yaml'
 PATHS_LIST = [str(ROOT_DIR), str(CONFIG_DIR)]
 
-# adicionar o root e o config no meu path do sistema
+# add root and config to system path
 for _p in PATHS_LIST:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from src.utils.config_loader import load_yaml  #importando a função do arquivo config_loader.py para ler os arquivos de configuração
+from src.utils.config_loader import load_yaml  # importing the function from config_loader.py to read the configuration files
 from src.utils.logger import get_logger
 from src.dowloader import check_kaggle_credentials, list_remote_files, download_dataset
 from src.ingestion import ingest_csv_to_parquet
 # %%
-# fazer a leitura dos arquivos de configuração
+# read configuration files
 data_cfg = load_yaml(DATA_CONFIG)
 pipeline_cfg = load_yaml(PIPELINE_CONFIG)
 
 # %%
-# obtendo a configuração do log
+# get logging configuration
 log_cfg = pipeline_cfg.get('logging')
 
-# criar o logger
+# create logger
 logger = get_logger(
     name='ingestao',
     logging_config=log_cfg
 )
 
 # %%
-# checando variável de ambiente
+# checking environment variable
 if check_kaggle_credentials(secrets_path=SECRETS_PATH):
-    logger.info('Kaggle Credential set!')
+    logger.info('Kaggle credentials are set!')
 else:
-    logger.error('Kaggle Credentials not set')
+    logger.error('Kaggle credentials not set')
 # %%
-### Discovery de dados
-#vai puxar os dados do arquivo data.yaml
+### Data discovery
+# pull data settings from data.yaml
 dataset = data_cfg.get('kaggle').get('dataset')
 file_pattern = data_cfg.get('kaggle').get('file_pattern', "*.csv")
 expected_files = data_cfg.get('kaggle').get('expected_files')
 
-#vai estampar as informaçoes
+# log the discovered information
 logger.info('Dataset  : %s', dataset)
-logger.info('Padrão   : %s', file_pattern)
-logger.info('Arquivos : %s', expected_files or '(auto-descoberta)')
+logger.info('Pattern  : %s', file_pattern)
+logger.info('Files    : %s', expected_files or '(auto-discovery)')
 
 if not expected_files:
     expected_files = list_remote_files(
@@ -59,38 +59,38 @@ if not expected_files:
         file_pattern=file_pattern,
         logging_config=log_cfg
     )
-    logger.info('Arquivos encontrados: %s', expected_files)
+    logger.info('Files found: %s', expected_files)
     #%%
-# definir o diretório de destino dos dados brutos, buscar os dados e criar uma pasta, mas se ja existe a pasta ele nao vai criar
+# define raw data destination directory, download data, and create folder if it does not exist
 raw_dir = ROOT_DIR / pipeline_cfg.get('paths').get('raw_data_dir')
 raw_dir.mkdir(parents=True, exist_ok=True)
 
 skip_download = pipeline_cfg.get('execution').get('skip_download_if_exists')
 force_download = pipeline_cfg.get('execution').get('force_redownload')
 
-# dowload dos dados - fase Extract de um ETL / ELT
+# download data - Extract phase of an ETL / ELT
 downloaded = download_dataset(
     dataset=dataset,
-    expected_files=expected_files, #agora a lista de expected files esta preenchida depois da etapa de discovery
+    expected_files=expected_files, # expected files list is now filled after the discovery step
     destination_dir=raw_dir,
     skip_if_exists=skip_download,
     force=force_download,
     logging_config=log_cfg
 )
-logger.info('Arquivos prontos: %d', len(downloaded))
+logger.info('Files ready: %d', len(downloaded))
 
-# verificar o conteúdo do diretório raw
+# check raw directory contents
 for f in sorted(raw_dir.glob('*.csv')):
     logger.info('  %s (%.1f KB)', f.name, f.stat().st_size / 1024)
 
 # %%
-# definir o caminho de saída do Parquet
+# define Parquet output path
 processed_dir = ROOT_DIR / pipeline_cfg['paths']['processed_data_dir']
 output_path = processed_dir / pipeline_cfg['paths']['output_filename']
 
-logger.info('Saída: %s', output_path)
+logger.info('Output: %s', output_path)
 
-# obtendo configurações de processamento
+# get processing configurations
 compression = data_cfg.get('ingest').get('compression', 'snappy')
 chunk_size = data_cfg.get('ingest').get('chunk_size_rows', 5_000)
 validate = data_cfg.get('ingest').get('validate_schema')

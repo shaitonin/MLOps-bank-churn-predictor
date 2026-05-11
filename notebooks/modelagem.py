@@ -1,24 +1,24 @@
 # %%
-# Entrada : data/features/bank_churn_features.parquet  ← preprocessamento.py
-# Saída   : mlruns/           (servidor MLFlow — experimentos, runs, artefatos)
-#           outputs/modeling/ (plots PNG salvos localmente antes de logar)
+# Input  : data/features/bank_churn_features.parquet  ← preprocessamento.py
+# Output : mlruns/           (MLFlow server — experiments, runs, artifacts)
+#          outputs/modeling/ (PNG plots saved locally before logging)
 #
-# Modelos configurados:
-#   Linear    : LogisticRegression   (baseline interpretável; requer scaling)
+# Configured models:
+#   Linear    : LogisticRegression   (interpretable baseline; requires scaling)
 #   Bagging   : RandomForestClassifier
 #   Boosting  : XGBClassifier        (scale_pos_weight=3.91)
-#   Boosting  : LGBMClassifier       (is_unbalance=True; crescimento leaf-wise)
+#   Boosting  : LGBMClassifier       (is_unbalance=True; leaf-wise growth)
 #
-# Pipeline leak-free (ImbPipeline):
-#   DataImputer → (StandardScaler + RobustScaler se LogisticRegression) →
-#   FeatureReducer (none|rfe|pca|kpca) → SMOTE → Estimador
-#   Cada step é ajustado APENAS nos índices de treino de cada fold de CV.
+# Leak-free pipeline (ImbPipeline):
+#   DataImputer → (StandardScaler + RobustScaler if LogisticRegression) →
+#   FeatureReducer (none|rfe|pca|kpca) → SMOTE → Estimator
+#   Each step is fitted ONLY on the training indices of each CV fold.
 #
-# Redução de dimensionalidade (src/feature_reducer.py):
-#   RFE  → mantém interpretabilidade (features originais selecionadas)
-#   PCA  → componentes ortogonais — incompatível com SHAP original
-#   KPCA → versão não-linear via kernel trick (rbf | poly | cosine)
-#   O Optuna co-otimiza: método de redução + parâmetros + estimador.
+# Dimensionality reduction (src/feature_reducer.py):
+#   RFE  → preserves interpretability (original features selected)
+#   PCA  → orthogonal components — incompatible with original SHAP
+#   KPCA → non-linear version via kernel trick (rbf | poly | cosine)
+#   Optuna co-optimizes: reduction method + parameters + estimator.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -66,7 +66,7 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Funções Auxiliares
+# Helper Functions
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -112,7 +112,7 @@ def _suggest_param(trial: optuna.Trial, name: str, spec: dict):
         return trial.suggest_int(name, int(spec['low']), int(spec['high']))
     elif ptype == 'categorical':
         return trial.suggest_categorical(name, spec['choices'])
-    raise ValueError(f'Tipo de search_space desconhecido: {ptype!r}')
+    raise ValueError(f'Unknown search_space type: {ptype!r}')
 
 # %%
 def _build_model(model_cfg: dict, extra_params: dict | None = None):
@@ -134,10 +134,10 @@ def _build_pipeline(
     feature_cols: list[str] | None = None,
 ) -> ImbPipeline:
     """
-    Constrói ImbPipeline:
-        DataImputer → (scalers se LogisticRegression) → FeatureReducer → SMOTE → estimador
+    Builds an ImbPipeline:
+        DataImputer → (scalers if LogisticRegression) → FeatureReducer → SMOTE → estimator
 
-    SMOTE aplicado apenas no fit() (treino) — nunca no transform() (validação/holdout).
+    SMOTE is applied only in fit() (training) — never in transform() (validation/holdout).
     """
     steps = []
 
@@ -145,14 +145,14 @@ def _build_pipeline(
     imp_specs = []
     for spec in pipe_cfg.get('imputation', []):
         normalized = dict(spec)
-        # normaliza chave group_by → group_column (padrão DataImputer)
+        # normalize key group_by → group_column (DataImputer standard)
         if 'group_by' in normalized and 'group_column' not in normalized:
             normalized['group_column'] = normalized.pop('group_by')
         imp_specs.append(normalized)
     if imp_specs:
         steps.append(('imputer', DataImputer(imputation_config=imp_specs)))
 
-    # Scaling — apenas para Regressão Logística
+    # Scaling — only for Logistic Regression
     if model_cfg.get('class') == 'LogisticRegression':
         scale_cfg = pipe_cfg.get('scaling', {})
         avail = set(feature_cols or [])
@@ -218,7 +218,7 @@ def _get_feature_importance(pipeline: ImbPipeline, feature_names: list[str],
         return pd.Series(r.importances_mean, index=feature_names)
 
 # %%
-# ─── Funções de Plot ─────────────────────────────────────────────────────────
+# ─── Plot Functions ─────────────────────────────────────────────────────────
 
 def _save_fig(fig, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -259,9 +259,9 @@ def _plot_confusion_matrix(y_true, y_pred, model_name: str, out_dir: Path) -> Pa
     cm = sk_confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax,
-                xticklabels=['Retido', 'Churn'], yticklabels=['Retido', 'Churn'])
-    ax.set_xlabel('Predito')
-    ax.set_ylabel('Real')
+                xticklabels=['Retained', 'Churn'], yticklabels=['Retained', 'Churn'])
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
     ax.set_title(f'Confusion Matrix — {model_name}')
     path = out_dir / f'confusion_matrix_{model_name}.png'
     _save_fig(fig, path)
@@ -297,7 +297,7 @@ def _plot_feature_importance(importance: pd.Series, model_name: str, out_dir: Pa
     fig, ax = plt.subplots(figsize=(7, max(4, top_n // 2)))
     top.plot(kind='barh', ax=ax)
     ax.set_title(f'Feature Importance (top {top_n}) — {model_name}')
-    ax.set_xlabel('Importância')
+    ax.set_xlabel('Importance')
     path = out_dir / f'feature_importance_{model_name}.png'
     _save_fig(fig, path)
     return path
@@ -318,13 +318,13 @@ def _plot_cv_fold_comparison(fold_metrics: list[dict], model_name: str, out_dir:
 # %%
 def _plot_class_distribution(y_before, y_after, out_dir: Path) -> Path:
     fig, axes = plt.subplots(1, 2, figsize=(8, 4))
-    for ax, y, title in zip(axes, [y_before, y_after], ['Antes do SMOTE', 'Após SMOTE']):
+    for ax, y, title in zip(axes, [y_before, y_after], ['Before SMOTE', 'After SMOTE']):
         vals = pd.Series(y).value_counts().sort_index()
         vals.plot(kind='bar', ax=ax, color=['steelblue', 'tomato'])
         ax.set_title(title)
-        ax.set_xlabel('Classe')
-        ax.set_ylabel('Contagem')
-        ax.set_xticklabels(['Retido (0)', 'Churn (1)'], rotation=0)
+        ax.set_xlabel('Class')
+        ax.set_ylabel('Count')
+        ax.set_xticklabels(['Retained (0)', 'Churn (1)'], rotation=0)
     fig.tight_layout()
     path = out_dir / 'class_distribution.png'
     _save_fig(fig, path)
@@ -332,7 +332,7 @@ def _plot_class_distribution(y_before, y_after, out_dir: Path) -> Path:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# Carregamento das Configurações
+# Configuration Loading
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -342,7 +342,7 @@ config.update(modeling_cfg)
 
 logger = get_logger('modelagem', config.get('logging'))
 
-logger.info('=== Bank Churn — Modelagem com MLFlow + Optuna ===')
+logger.info('=== Bank Churn — Modeling with MLFlow + Optuna ===')
 
 # %%
 _mod_cfg        = config.get('modeling', {})
@@ -358,8 +358,8 @@ threshold_cfg   = config.get('threshold_tuning', {})
 DEFAULT_THRESHOLD = threshold_cfg.get('default_threshold', 0.50)
 OPT_THRESHOLD     = threshold_cfg.get('optimized_threshold', 0.40)
 
-# URI com scheme explícito (sqlite://, http://) → usa direto
-# Caminho relativo (ex: "mlruns") → converte para file://
+# Explicit scheme URI (sqlite://, http://) → use as-is
+# Relative path (e.g. "mlruns") → convert to file://
 _known_schemes = ('sqlite://', 'postgresql://', 'mysql://', 'http://', 'https://', 'file://')
 if any(tracking_uri.startswith(s) for s in _known_schemes):
     _resolved_uri = tracking_uri
@@ -370,9 +370,9 @@ mlflow.set_tracking_uri(_resolved_uri)
 mlflow.set_experiment(experiment_name)
 
 logger.info('MLFlow URI       : %s', _resolved_uri)
-logger.info('Experimento      : %s', experiment_name)
-logger.info('Random seed      : %d', SEED)
-logger.info('Threshold padrão : %.2f | otimizado: %.2f', DEFAULT_THRESHOLD, OPT_THRESHOLD)
+logger.info('Experiment      : %s', experiment_name)
+logger.info('Random seed     : %d', SEED)
+logger.info('Default threshold : %.2f | optimized: %.2f', DEFAULT_THRESHOLD, OPT_THRESHOLD)
 
 # %%
 cv_cfg        = config.get('cv', {})
@@ -381,16 +381,16 @@ models_cfg    = config.get('models', {})
 artifacts_cfg = config.get('artifacts', {})
 
 enabled_models = [k for k, v in models_cfg.items() if v.get('enabled', True)]
-logger.info('Modelos habilitados: %s', enabled_models)
-logger.info('SMOTE habilitado   : %s', smote_cfg.get('enabled', False))
-logger.info('Feature reducer    : method=%s', feat_red_cfg.get('method', 'none'))
+logger.info('Enabled models   : %s', enabled_models)
+logger.info('SMOTE enabled     : %s', smote_cfg.get('enabled', False))
+logger.info('Feature reducer   : method=%s', feat_red_cfg.get('method', 'none'))
 
 # %%
 _red_method = feat_red_cfg.get('method', 'none')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 1 — Carregar Features
+# SECTION 1 — Load Features
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -398,18 +398,18 @@ features_dir  = ROOT_DIR / 'data' / 'features'
 features_file = features_dir / 'bank_churn_features.parquet'
 
 logger.info('─' * 60)
-logger.info('SEÇÃO 1: Carregar Features')
-logger.info('Lendo: %s', features_file)
+logger.info('SECTION 1: Load Features')
+logger.info('Reading: %s', features_file)
 
 if not features_file.exists():
     raise FileNotFoundError(
-        f"Arquivo não encontrado: {features_file}\n"
-        "Execute preprocessamento.py antes deste script."
+            f"File not found: {features_file}\n"
+            "Run preprocessamento.py before this script."
     )
 
 # %%
 schema = pq.read_schema(str(features_file))
-logger.info('Schema (%d colunas):', len(schema))
+logger.info('Schema (%d columns):', len(schema))
 for field in schema:
     logger.info('  %-30s %s', field.name, field.type)
 
@@ -423,7 +423,7 @@ feature_cols = [c for c in df.columns if c != target_col]
 X = df[feature_cols].copy()
 y = df[target_col]
 
-# XGBoost rejeita colunas com caracteres especiais — sanitiza uma vez
+# XGBoost rejects columns with special characters — sanitize once
 _rename_map = {
     c: c.replace('<', 'lt_').replace('[', '(').replace(']', ')')
     for c in X.columns if any(ch in c for ch in ('<', '[', ']'))
@@ -431,20 +431,20 @@ _rename_map = {
 if _rename_map:
     X = X.rename(columns=_rename_map)
     feature_cols = list(X.columns)
-    logger.info('Colunas renomeadas: %s', _rename_map)
+    logger.info('Renamed columns: %s', _rename_map)
 
 logger.info('Features : %d', len(feature_cols))
 logger.info('Target   : %s  (churn=%.1f%%)', target_col, y.mean() * 100)
 
 n_nulls = X.isna().sum().sum()
 if n_nulls > 0:
-    logger.warning('ATENÇÃO: %d valores nulos nas features!', n_nulls)
+    logger.warning('WARNING: %d null values found in features!', n_nulls)
 else:
-    logger.info('Sem valores nulos ✓')
+    logger.info('No null values ✓')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 2 — Divisão Treino / Holdout
+# SECTION 2 — Train / Holdout Split
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -452,7 +452,7 @@ test_size = holdout_cfg.get('test_size', 0.20)
 stratify  = holdout_cfg.get('stratify', True)
 
 logger.info('─' * 60)
-logger.info('SEÇÃO 2: Divisão Treino / Holdout')
+logger.info('SECTION 2: Train / Holdout Split')
 logger.info('Test size: %.0f%%  |  Stratify: %s', test_size * 100, stratify)
 
 # %%
@@ -463,24 +463,24 @@ X_train, X_holdout, y_train, y_holdout = train_test_split(
     stratify=y if stratify else None,
 )
 
-logger.info('Treino  : %d amostras — churn=%.1f%%', len(X_train), y_train.mean() * 100)
-logger.info('Holdout : %d amostras — churn=%.1f%%', len(X_holdout), y_holdout.mean() * 100)
+logger.info('Train   : %d samples — churn=%.1f%%', len(X_train), y_train.mean() * 100)
+logger.info('Holdout : %d samples — churn=%.1f%%', len(X_holdout), y_holdout.mean() * 100)
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 3 — Registro de Modelos e Configuração do Pipeline
+# SECTION 3 — Model Registration and Pipeline Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('SEÇÃO 3: Registro de Modelos')
+logger.info('SECTION 3: Model Registration')
 
 rows = []
 for name, cfg in models_cfg.items():
     rows.append({
-        'modelo'         : name,
-        'habilitado'     : '✓' if cfg.get('enabled', True) else '✗',
-        'classe'         : f"{cfg['module']}.{cfg['class']}",
+        'model'          : name,
+        'enabled'        : '✓' if cfg.get('enabled', True) else '✗',
+        'class'          : f"{cfg['module']}.{cfg['class']}",
         'optuna_trials'  : cfg.get('optuna_trials', _global_n_trials),
         'search_space'   : len(cfg.get('search_space') or {}),
     })
@@ -492,7 +492,7 @@ logger.info('Feature reducer: method=%s | params=%s', _red_method, _default_redu
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 4 — Baseline: Cross-Validation com Parâmetros Padrão
+# SECTION 4 — Baseline: Cross-Validation with Default Parameters
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -501,7 +501,7 @@ shuffle  = cv_cfg.get('shuffle', True)
 cv = StratifiedKFold(n_splits=n_splits, shuffle=shuffle, random_state=SEED)
 
 logger.info('─' * 60)
-logger.info('SEÇÃO 4: Baseline CV  (StratifiedKFold, %d folds, threshold=%.2f)',
+logger.info('SECTION 4: Baseline CV  (StratifiedKFold, %d folds, threshold=%.2f)',
             n_splits, DEFAULT_THRESHOLD)
 
 # %%
@@ -565,7 +565,7 @@ for model_name, model_cfg in models_cfg.items():
 # %%
 baseline_df = pd.DataFrame([
     {
-        'modelo'            : k,
+        'model'             : k,
         'cv_roc_auc_mean'   : v['cv_roc_auc_mean'],
         'cv_roc_auc_std'    : v['cv_roc_auc_std'],
         'cv_f1_mean'        : v['cv_f1_mean'],
@@ -580,25 +580,25 @@ baseline_df
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 5 — Otimização de Hiperparâmetros com Optuna
+# SECTION 5 — Hyperparameter Optimization with Optuna
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('SEÇÃO 5: Optuna — Otimização de Hiperparâmetros')
+logger.info('SECTION 5: Optuna — Hyperparameter Optimization')
 
 # %%
 def _make_objective(model_name: str, model_cfg: dict):
-    """Cria função objetivo do Optuna para um modelo."""
+    """Creates the Optuna objective function for a model."""
     red_ss = feat_red_cfg.get('search_space', {})
 
     def objective(trial: optuna.Trial) -> float:
-        # Hiperparâmetros do modelo
+        # Model hyperparameters
         model_params = {}
         for pname, spec in (model_cfg.get('search_space') or {}).items():
             model_params[pname] = _suggest_param(trial, pname, spec)
 
-        # Método de redução (o Optuna pode escolher entre none/rfe/pca/kpca)
+        # Reduction method (Optuna can choose between none/rfe/pca/kpca)
         if 'method' in red_ss:
             red_method = _suggest_param(trial, 'reducer_method', red_ss['method'])
         else:
@@ -630,7 +630,7 @@ for model_name, model_cfg in models_cfg.items():
     if not model_cfg.get('enabled', True):
         continue
     if not model_cfg.get('search_space'):
-        logger.info('[SKIP Optuna] %s — sem search_space', model_name)
+        logger.info('[SKIP Optuna] %s — no search_space', model_name)
         continue
 
     n_trials = model_cfg.get('optuna_trials', _global_n_trials)
@@ -643,7 +643,7 @@ for model_name, model_cfg in models_cfg.items():
                           tags={'stage': 'optuna', 'model': model_name}):
 
         def _log_trial(study, trial):
-            if trial.value is None:   # trial falhou (combinação inválida) — não loga
+            if trial.value is None:   # trial failed (invalid combination) — skip logging
                 return
             with mlflow.start_run(run_name=f'trial_{trial.number}', nested=True,
                                   tags={'trial': str(trial.number), 'model': model_name}):
@@ -656,16 +656,16 @@ for model_name, model_cfg in models_cfg.items():
             n_trials=n_trials,
             callbacks=[_log_trial],
             show_progress_bar=False,
-            catch=(ValueError,),   # ignora combinações inválidas (ex: l1 + lbfgs)
+            catch=(ValueError,),   # ignore invalid combinations (e.g. l1 + lbfgs)
         )
 
         best = study.best_trial
         logger.info(
-            '    Melhor ROC-AUC: %.4f  |  Params: %s  |  %.1fs',
+            '    Best ROC-AUC: %.4f  |  Params: %s  |  %.1fs',
             best.value, best.params, time.time() - t0,
         )
 
-        # Extrai params do modelo e do reducer separadamente
+        # Extract model and reducer params separately
         best_model_params   = {k: v for k, v in best.params.items()
                                if not k.startswith('red_') and k != 'reducer_method'}
         best_reducer_method = best.params.get('reducer_method', _red_method)
@@ -674,13 +674,13 @@ for model_name, model_cfg in models_cfg.items():
             k[4:]: v for k, v in best.params.items() if k.startswith('red_')
         })
 
-        # Registra melhor configuração
+        # Log best configuration
         mlflow.log_params({f'best_{k}': (str(v) if v is None else v)
                            for k, v in best.params.items()})
         mlflow.log_metric('best_cv_roc_auc', best.value)
         mlflow.log_metric('optuna_time_s', time.time() - t0)
 
-        # Executa CV completo com os melhores params para agregar todas as métricas
+        # Run full CV with the best params to aggregate all metrics
         best_pipeline = _build_pipeline(
             model_cfg=model_cfg,
             model_params=best_model_params,
@@ -694,7 +694,7 @@ for model_name, model_cfg in models_cfg.items():
         best_agg = _aggregate_fold_metrics(best_fold_metrics)
         mlflow.log_metrics(best_agg)
 
-    # Atualiza all_results se Optuna melhorou
+    # Update all_results if Optuna improved
     prev_auc = all_results[model_name]['cv_roc_auc_mean']
     if best.value > prev_auc:
         all_results[model_name].update({
@@ -704,15 +704,15 @@ for model_name, model_cfg in models_cfg.items():
             'reducer_params' : best_reducer_params,
             'tuned'          : True,
         })
-        logger.info('    ✓ Optuna melhorou: %.4f → %.4f', prev_auc, best.value)
+        logger.info('    ✓ Optuna improved: %.4f → %.4f', prev_auc, best.value)
     else:
-        logger.info('    — Optuna não melhorou (%.4f ≤ %.4f)', best.value, prev_auc)
+        logger.info('    — Optuna did not improve (%.4f ≤ %.4f)', best.value, prev_auc)
 
 # %%
-# Tabela pós-Optuna
+# Post-Optuna table
 tuned_df = pd.DataFrame([
     {
-        'modelo'          : k,
+        'model'           : k,
         'cv_roc_auc_mean' : v['cv_roc_auc_mean'],
         'cv_f1_mean'      : v['cv_f1_mean'],
         'cv_recall_mean'  : v['cv_recall_mean'],
@@ -726,26 +726,26 @@ tuned_df
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 6 — Melhor Modelo: Artefatos e Ajuste de Threshold
+# SECTION 6 — Best Model: Artifacts and Threshold Tuning
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 out_dir = ROOT_DIR / artifacts_cfg.get('output_dir', 'outputs/modeling')
 out_dir.mkdir(parents=True, exist_ok=True)
 
-# Seleciona o melhor modelo por ROC-AUC médio na CV
+# Select the best model by average CV ROC-AUC
 best_model_name = max(all_results, key=lambda k: all_results[k]['cv_roc_auc_mean'])
 best_result     = all_results[best_model_name]
 best_model_cfg  = best_result['model_cfg']
 
 logger.info('─' * 60)
-logger.info('SEÇÃO 6: Artefatos — Melhor Modelo: %s', best_model_name)
+logger.info('SECTION 6: Artifacts — Best Model: %s', best_model_name)
 logger.info('  CV ROC-AUC : %.4f ± %.4f', best_result['cv_roc_auc_mean'], best_result['cv_roc_auc_std'])
 logger.info('  CV F1      : %.4f', best_result['cv_f1_mean'])
 logger.info('  CV Recall  : %.4f', best_result['cv_recall_mean'])
 
 # %%
-# Treina o pipeline final no dataset completo de treino
+# Train the final pipeline on the full training dataset
 final_pipeline = _build_pipeline(
     model_cfg=best_model_cfg,
     model_params=best_result['best_params'],
@@ -806,7 +806,7 @@ with mlflow.start_run(run_name=f'best_model_{best_model_name}',
             mlflow.log_artifact(str(p), artifact_path='plots')
 
         if 'class_distribution' in plots and smote_cfg.get('enabled', False):
-            # Aplica o pipeline parcial (sem estimador) para obter X após SMOTE
+            # Apply the partial pipeline (without estimator) to obtain X after SMOTE
             try:
                 pipe_no_est = ImbPipeline(
                     [(n, s) for n, s in final_pipeline.steps if n != 'estimator']
@@ -827,7 +827,7 @@ with mlflow.start_run(run_name=f'best_model_{best_model_name}',
                     if (reducer and hasattr(reducer, 'selected_features'))
                     else feature_cols
                 )
-                # Transforma X_train pelo pipeline (sem estimador)
+                # Transform X_train through the pipeline (without estimator)
                 pipe_transform = ImbPipeline(
                     [(n, s) for n, s in final_pipeline.steps if n not in ('estimator', 'smote')]
                 )
@@ -844,7 +844,7 @@ with mlflow.start_run(run_name=f'best_model_{best_model_name}',
                     explainer = shap.LinearExplainer(estimator, X_sample)
                 shap_values = explainer.shap_values(X_sample)
 
-                # Para classificação binária, shap_values pode ser lista [neg, pos]
+                # For binary classification, shap_values may be a list [neg, pos]
                 sv = shap_values[1] if isinstance(shap_values, list) else shap_values
                 fig, ax = plt.subplots(figsize=(8, 6))
                 shap.summary_plot(sv, X_sample, feature_names=imp_features,
@@ -853,20 +853,20 @@ with mlflow.start_run(run_name=f'best_model_{best_model_name}',
                 _save_fig(plt.gcf(), p)
                 mlflow.log_artifact(str(p), artifact_path='plots')
             except Exception as e:
-                logger.warning('SHAP não disponível ou falhou: %s', e)
+                logger.warning('SHAP unavailable or failed: %s', e)
 
-    # Salva pipeline no MLflow
+    # Save pipeline in MLflow
     mlflow.sklearn.log_model(final_pipeline, artifact_path='model')
-    logger.info('Pipeline salvo no MLflow ✓')
+    logger.info('Pipeline saved to MLflow ✓')
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 7 — Avaliação no Holdout
+# SECTION 7 — Holdout Evaluation
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('SEÇÃO 7: Avaliação no Holdout — %s', best_model_name)
+logger.info('SECTION 7: Holdout Evaluation — %s', best_model_name)
 
 # %%
 y_holdout_prob = final_pipeline.predict_proba(X_holdout)[:, 1]
@@ -903,9 +903,9 @@ with mlflow.start_run(run_name=f'holdout_{best_model_name}',
         mlflow.log_artifact(str(p), artifact_path='plots/holdout')
 
 # %%
-# Comparação CV vs Holdout
+# CV vs Holdout comparison
 comparison = pd.DataFrame({
-    'métrica'   : ['roc_auc', 'f1', 'recall', 'precision', 'avg_precision'],
+    'metric'    : ['roc_auc', 'f1', 'recall', 'precision', 'avg_precision'],
     'cv_mean'   : [best_result['cv_roc_auc_mean'], best_result['cv_f1_mean'],
                    best_result['cv_recall_mean'], best_result['cv_precision_mean'],
                    best_result['cv_avg_precision_mean']],
@@ -919,23 +919,23 @@ comparison
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SUMÁRIO FINAL
+# FINAL SUMMARY
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('═' * 60)
-logger.info('SUMÁRIO FINAL — Bank Churn Classification')
-logger.info('Melhor modelo  : %s', best_model_name)
+logger.info('FINAL SUMMARY — Bank Churn Classification')
+logger.info('Best model      : %s', best_model_name)
 logger.info('CV ROC-AUC     : %.4f ± %.4f', best_result['cv_roc_auc_mean'], best_result['cv_roc_auc_std'])
 logger.info('Holdout ROC-AUC: %.4f', holdout_metrics['roc_auc'])
 logger.info('Holdout F1     : %.4f', holdout_metrics['f1'])
 logger.info('Holdout Recall : %.4f', holdout_metrics['recall'])
 logger.info('Holdout Prec.  : %.4f', holdout_metrics['precision'])
-logger.info('Threshold usado: %.2f', OPT_THRESHOLD)
+logger.info('Threshold used  : %.2f', OPT_THRESHOLD)
 
 final_df = pd.DataFrame([
     {
-        'modelo'          : k,
+        'model'           : k,
         'cv_roc_auc_mean' : v['cv_roc_auc_mean'],
         'cv_roc_auc_std'  : v['cv_roc_auc_std'],
         'cv_f1_mean'      : v['cv_f1_mean'],

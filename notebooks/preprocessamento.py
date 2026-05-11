@@ -1,24 +1,24 @@
 # %%
 #
-# Transformações cobertas (baseadas no EDA Report — Seções 8.1, 8.2, 8.3):
-#   1. Remoção de identificadores — RowNumber, CustomerId, Surname (8.1)
-#   2. Imputação       — delegada ao Pipeline de modelagem (stateful — ver nota) (8.3)
-#   3. Flags binárias  — HasZeroBalance, HighRiskProducts (8.1)
-#   4. Interações      — AgeInactivity, EngagementScore (8.1)
-#   5. Razões          — BalanceSalaryRatio (8.1)
-#   6. Faixas etárias  — AgeGroup (encoding ordinal) (8.1)
-#   7. Encoding        — Geography (OHE), Gender (binary), Card Type (OHE) (8.1)
-#   8. Seleção         — features_to_keep do EDA Report (8.1)
+# Covered transformations (based on the EDA Report — Sections 8.1, 8.2, 8.3):
+#   1. Identifier removal — RowNumber, CustomerId, Surname (8.1)
+#   2. Imputation          — delegated to the modeling pipeline (stateful — see note) (8.3)
+#   3. Binary flags       — HasZeroBalance, HighRiskProducts (8.1)
+#   4. Interactions       — AgeInactivity, EngagementScore (8.1)
+#   5. Ratios             — BalanceSalaryRatio (8.1)
+#   6. Age bins           — AgeGroup (ordinal encoding) (8.1)
+#   7. Encoding           — Geography (OHE), Gender (binary), Card Type (OHE) (8.1)
+#   8. Selection          — features_to_keep from the EDA Report (8.1)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
-# Configuração do Ambiente
+# Environment setup
 import sys
 import pandas as pd
 from pathlib import Path
 import pyarrow.parquet as pq
 
-# Definições de caminhos
+# Path definitions
 ROOT_DIR   = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT_DIR / 'config'
 PATHS_LIST = [str(ROOT_DIR), str(CONFIG_DIR)]
@@ -31,7 +31,7 @@ for _p in PATHS_LIST:
 from src.utils.logger import get_logger
 from src.utils.config_loader import load_yaml
 
-# ── Importa todos os transformadores do módulo src/preprocessing.py ──────────
+# ── Import all transformers from the src/preprocessing.py module ──────────
 from src.preprocessing import (
     DataImputer,
     ColumnDropper,
@@ -46,23 +46,23 @@ from src.preprocessing import (
 # %%
 config = load_yaml(CONFIG_DIR / 'pipeline.yaml')
 preprocessing = load_yaml(prep_yaml_path)
-config.update(preprocessing)  # Mescla as configs (pipeline + preprocessing)
+config.update(preprocessing)  # Merge configs (pipeline + preprocessing)
 
-# Configura o logger
+# Configure logger
 log_cfg = config.get('logging')
 logger = get_logger(
     name='preprocessamento',
     logging_config=log_cfg
 )
 
-logger.info('=== Pré-processamento e Feature Engineering — Bank Churn ===')
-logger.info('Config carregada: pipeline.yaml + preprocessing.yaml')
+logger.info('=== Preprocessing and Feature Engineering — Bank Churn ===')
+logger.info('Config loaded: pipeline.yaml + preprocessing.yaml')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Inspeciona a configuração carregada
+# Inspect loaded configuration
 #
-# Ponto de ensino: o aluno vê exatamente o que foi lido do YAML.
-# Qualquer mudança no preprocessing.yaml aparece aqui sem alterar o código.
+# Teaching point: the student sees exactly what was read from YAML.
+# Any change in preprocessing.yaml appears here without changing the code.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
@@ -71,56 +71,56 @@ output_dir  = ROOT_DIR / prep_cfg.get('output_dir', 'data/features')
 output_path = output_dir / prep_cfg.get('output_filename', 'bank_churn_features.parquet')
 compression = prep_cfg.get('compression', 'snappy')
 
-logger.info('Saída      : %s', output_path)
-logger.info('Compressão : %s', compression)
+logger.info('Output     : %s', output_path)
+logger.info('Compression: %s', compression)
 
 # %%
-# Lista as transformações configuradas no YAML
-logger.info('Colunas a remover       : %d', len(config.get('drop_columns', [])))
-logger.info('Flags binárias          : %d', len(config.get('binary_flags', [])))
-logger.info('Features de interação   : %d', len(config.get('interaction_features', [])))
-logger.info('Features de razão       : %d', len(config.get('ratio_features', [])))
-logger.info('Encoding categórico     : %d', len(config.get('categorical_encoding', [])))
-logger.info('Features para seleção   : %d',
+# List configured transformations from YAML
+logger.info('Columns to drop         : %d', len(config.get('drop_columns', [])))
+logger.info('Binary flags            : %d', len(config.get('binary_flags', [])))
+logger.info('Interaction features    : %d', len(config.get('interaction_features', [])))
+logger.info('Ratio features          : %d', len(config.get('ratio_features', [])))
+logger.info('Categorical encoding    : %d', len(config.get('categorical_encoding', [])))
+logger.info('Features for selection  : %d',
             len(config.get('feature_selection', {}).get('features_to_keep', [])))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 1 — Carregamento do Dataset
+# SECTION 1 — Dataset Loading
 # %%
-# Caminho do Parquet gerado pela etapa de ingestão + qualidade
+# Parquet path generated by the ingestion + quality stage
 processed_dir = ROOT_DIR / config['paths']['processed_data_dir']
 parquet_path  = processed_dir / config['paths']['output_filename']
 
-logger.info('Lendo: %s', parquet_path)
+logger.info('Reading: %s', parquet_path)
 
 if not parquet_path.exists():
     raise FileNotFoundError(
-        f"Arquivo Parquet não encontrado: {parquet_path}\n"
-        "Execute ingestao.py e qualidade.py antes deste script."
+        f"Parquet file not found: {parquet_path}\n"
+        "Run ingestao.py and qualidade.py before this script."
     )
 
 # %%
-# Inspeciona o schema sem carregar os dados (leitura de metadados é barata)
+# Inspect schema without loading data (metadata read is cheap)
 schema = pq.read_schema(str(parquet_path))
-logger.info('Schema original (%d colunas):', len(schema))
+logger.info('Original schema (%d columns):', len(schema))
 for field in schema:
     logger.info('  %-30s %s', field.name, field.type)
 
 # %%
-# Carrega o DataFrame completo
+# Load the full DataFrame
 df = pq.read_table(str(parquet_path)).to_pandas()
-logger.info('Shape original: %s', df.shape)
+logger.info('Original shape: %s', df.shape)
 
 # %%
-# Visão rápida antes das transformações
+# Quick view before transformations
 logger.info(df.head())
 
-# Estatísticas descritivas e nulos — baseline antes do pré-processamento
-logger.info('Valores ausentes por coluna:')
+# Descriptive statistics and missing values — baseline before preprocessing
+logger.info('Missing values per column:')
 null_counts = df.isna().sum()
 if null_counts.sum() == 0:
-    logger.info('  Nenhum valor ausente encontrado — dataset limpo.')
+    logger.info('  No missing values found — clean dataset.')
 else:
     for col, n_null in null_counts[null_counts > 0].items():
         logger.info('  %-25s %d (%.2f%%)', col, n_null, 100 * n_null / len(df))
@@ -130,75 +130,74 @@ logger.info(df.describe())
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 2 — Remoção de Identificadores
+# SECTION 2 — Identifier Removal
 #
-# RowNumber, CustomerId, Surname não têm relação causal com churn.
-# Removê-los garante que o modelo aprenda padrões de comportamento,
-# não correlações espúrias com IDs específicos de clientes.
-# EDA Seção 8.1: COLS_TO_DROP = ["RowNumber", "CustomerId", "Surname"]
+# RowNumber, CustomerId, Surname have no causal relation to churn.
+# Removing them ensures the model learns behavior patterns,
+# not spurious correlations with specific customer IDs.
+# EDA Section 8.1: COLS_TO_DROP = ["RowNumber", "CustomerId", "Surname"]
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 drop_cols = config.get('drop_columns', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 2: Remoção de Identificadores')
-logger.info('Colunas a remover: %s', drop_cols)
+logger.info('SECTION 2: Identifier Removal')
+logger.info('Columns to drop: %s', drop_cols)
 
 # %%
-# Instancia e aplica o dropper (stateless — fit é no-op)
+# Instantiate and apply the dropper (stateless — fit is no-op)
 dropper = ColumnDropper(columns=drop_cols, logger=logger)
 df = dropper.fit_transform(df)
 
 # %%
-logger.info('Shape após remoção: %s', df.shape)
-logger.info('Colunas restantes: %s', list(df.columns))
+logger.info('Shape after removal: %s', df.shape)
+logger.info('Remaining columns: %s', list(df.columns))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 3 — Imputação de Valores Ausentes  [MOVIDA PARA O PIPELINE DE MODELAGEM]
+# SECTION 3 — Missing Value Imputation  [MOVED TO THE MODELING PIPELINE]
 #
-# ⚠ AVISO MLOps — Data Leakage
-# Imputação é STATEFUL: GroupMedianImputer aprende medianas/modas no fit()
-# e aplica no transform(). Ajustar ANTES do split treino/holdout usa
-# informação do conjunto de teste para preencher NaN no conjunto de treino
-# → data leakage.
+# ⚠ MLOps WARNING — Data Leakage
+# Imputation is STATEFUL: GroupMedianImputer learns medians/modes in fit()
+# and applies them in transform(). Fitting BEFORE the train/holdout split uses
+# test set information to fill NaN in the train set → data leakage.
 #
-# Este dataset não possui valores ausentes (EDA Seção 3: 0 nulos em 180.000
-# células). No entanto, em produção (dados reais do banco) esperam-se nulos
-# — especialmente em Balance (clientes novos) e CreditScore (sem análise formal).
+# This dataset has no missing values (EDA Section 3: 0 nulls in 180,000
+# cells). However, in production (real bank data) nulls are expected
+# — especially in Balance (new customers) and CreditScore (no formal analysis).
 #
-# SOLUÇÃO: GroupMedianImputer é aplicado DENTRO do Pipeline de modelagem
-# (modelagem.py), APÓS o split treino/holdout.
-# As estratégias estão configuradas em preprocessing.yaml → imputation.
+# SOLUTION: GroupMedianImputer is applied INSIDE the modeling pipeline
+# (modelagem.py), AFTER the train/holdout split.
+# Strategies are configured in preprocessing.yaml → imputation.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 logger.info('─' * 60)
-logger.info('SEÇÃO 3: Imputação — delegada ao Pipeline de modelagem (ver modelagem.py)')
+logger.info('SECTION 3: Imputation — delegated to the modeling pipeline (see modelagem.py)')
 imp_specs = config.get('imputation', [])
-logger.info('Especificações configuradas (referência): %d colunas', len(imp_specs))
+logger.info('Configured specifications (reference): %d columns', len(imp_specs))
 for spec in imp_specs:
     logger.info('  %-20s → strategy=%s', spec['column'], spec['strategy'])
 
 n_null_total = int(df.isna().sum().sum())
 logger.info(
-    'NaN total no dataset atual: %d — %s',
+    'Total NaN in current dataset: %d — %s',
     n_null_total,
-    'dataset limpo, imputação não necessária neste batch'
+    'clean dataset, imputation not necessary in this batch'
     if n_null_total == 0
-    else 'NaN encontrados — serão tratados no pipeline de modelagem',
+    else 'NaN found — will be handled in the modeling pipeline',
 )
 
 # %%
-# Referência de uso — DataImputer será instanciado no pipeline de modelagem:
+# Usage reference — DataImputer will be instantiated in the modeling pipeline:
 #
 #   imp_cfg = config['imputation']
 #   imputer = DataImputer(imputation_config=imp_cfg, logger=logger)
-#   imputer.fit(X_train)           # aprende medianas/modas APENAS no treino
+#   imputer.fit(X_train)           # learns medians/modes ONLY on train
 #   X_train = imputer.transform(X_train)
 #   X_test  = imputer.transform(X_test)
 #
-# Estratégias configuradas (preprocessing.yaml → imputation):
+# Strategies configured (preprocessing.yaml → imputation):
 imp_cfg = config.get('imputation', [])
 for spec in imp_cfg:
     logger.info(
@@ -211,76 +210,76 @@ for spec in imp_cfg:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 4 — Flags Binárias
+# SECTION 4 — Binary Flags
 #
-# Dois padrões têm significado especial neste dataset:
+# Two patterns have special meaning in this dataset:
 #
 # 1. Balance == 0 → HasZeroBalance
-#    - 36.17% dos clientes mantêm conta com saldo zero — não é erro de dados,
-#      é um comportamento distinto de uso bancário.
-#    - Paradoxalmente, apresentam MENOR churn (clientes "ativos" sem saldo
-#      mas que mantêm a conta ativa por outros motivos).
-#    - A flag permite que o modelo aprenda esse padrão sem confundir
-#      saldo zero com "dado ausente".
+#    - 36.17% of customers keep accounts with zero balance — this is not a data error,
+#      it is a distinct banking usage behavior.
+#    - Paradoxically, they show LOWER churn ("active" customers with zero balance
+#      who keep the account open for other reasons).
+#    - The flag allows the model to learn this pattern without confusing
+#      zero balance with "missing data".
 #
 # 2. NumOfProducts >= 3 → HighRiskProducts
-#    - 3 produtos: 82.7% de churn | 4 produtos: 100% de churn
-#    - O ponto de inflexão é abrupto e altamente não-linear.
-#    - Sem a flag, um modelo linear não conseguiria capturar esse limiar.
+#    - 3 products: 82.7% churn | 4 products: 100% churn
+#    - The inflection point is abrupt and highly non-linear.
+#    - Without the flag, a linear model could not capture this threshold.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 flags_cfg = config.get('binary_flags', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 4: Flags Binárias')
+logger.info('SECTION 4: Binary Flags')
 
 # %%
-# Instancia e aplica o transformador de flags (stateless — fit é no-op)
+# Instantiate and apply the flag transformer (stateless — fit is no-op)
 flag_transformer = BinaryFlagTransformer(flags=flags_cfg, logger=logger)
 df = flag_transformer.transform(df)
 
 # %%
-# Inspeciona os resultados
+# Inspect the results
 for spec in flags_cfg:
     new_col = spec['new_column']
     logger.info(
-        "'%s': %d linhas = 1 (%.2f%%)",
+        "'%s': %d rows = 1 (%.2f%%)",
         new_col,
         int(df[new_col].sum()),
         100 * df[new_col].mean(),
     )
 
 # %%
-# Validação cruzada com o target — confirma poder preditivo das flags
-logger.info('Taxa de churn por HasZeroBalance:')
+# Cross-check with the target — confirms the flags' predictive power
+logger.info('Churn rate by HasZeroBalance:')
 logger.info(df.groupby('HasZeroBalance')['Exited'].mean().round(4))
 
-logger.info('Taxa de churn por HighRiskProducts:')
+logger.info('Churn rate by HighRiskProducts:')
 logger.info(df.groupby('HighRiskProducts')['Exited'].mean().round(4))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 5 — Features de Interação
+# SECTION 5 — Interaction Features
 #
-# AgeInactivity: amplifica o sinal de desengajamento em clientes mais velhos.
-#   Fórmula: Age × (1 − IsActiveMember)
-#   Clientes inativos e mais velhos apresentam churn muito mais alto.
-#   Exemplo: cliente de 50 anos inativo → AgeInactivity = 50
-#            cliente de 50 anos ativo   → AgeInactivity = 0
-#   A feature captura a combinação dos dois maiores preditores de churn.
+# AgeInactivity: amplifies the disengagement signal in older customers.
+#   Formula: Age × (1 − IsActiveMember)
+#   Inactive, older customers show much higher churn.
+#   Example: inactive 50-year-old → AgeInactivity = 50
+#            active 50-year-old   → AgeInactivity = 0
+#   The feature captures the combination of the two largest churn predictors.
 #
-# EngagementScore: score composto de engajamento do cliente (range: -1 a 3).
-#   Fórmula: IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance
-#   Score 3: cliente ativo, com 2 produtos e cartão, com saldo → menor risco
-#   Score -1: cliente inativo, sem 2 produtos, sem cartão, com saldo zero → maior risco
+# EngagementScore: composite customer engagement score (range: -1 to 3).
+#   Formula: IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance
+#   Score 3: active customer with 2 products and card, with balance → lower risk
+#   Score -1: inactive customer with no 2 products, no card, zero balance → higher risk
 #
-# ⚠ EngagementScore usa HasZeroBalance criado na Seção 4 — ordem importa.
+# ⚠ EngagementScore uses HasZeroBalance created in Section 4 — order matters.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 interact_cfg = config.get('interaction_features', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 5: Features de Interação')
+logger.info('SECTION 5: Interaction Features')
 
 # %%
 interact_transformer = InteractionFeatureTransformer(
@@ -289,13 +288,13 @@ interact_transformer = InteractionFeatureTransformer(
 df = interact_transformer.transform(df)
 
 # %%
-# Estatísticas das novas features
+# Statistics of the new features
 new_interact_cols = [spec['name'] for spec in interact_cfg]
 logger.info(df[new_interact_cols].describe())
 
 # %%
-# Correlação com o target — valida poder preditivo
-logger.info('Correlação das features de interação com Exited:')
+# Correlation with the target — validates predictive power
+logger.info('Correlation of interaction features with Exited:')
 for col in new_interact_cols:
     if col in df.columns:
         corr = df[col].corr(df['Exited'])
@@ -303,33 +302,33 @@ for col in new_interact_cols:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 6 — Features de Razão
+# SECTION 6 — Ratio Features
 #
-# BalanceSalaryRatio: razão entre saldo em conta e salário estimado.
-#   Fórmula: Balance / (EstimatedSalary + 1)
-#   Captura clientes que concentram patrimônio no banco (saldo alto
-#   relativo ao salário) — exatamente os mais disputados pela concorrência.
-#   EDA (Achado 7): clientes de maior saldo apresentam 25% mais churn.
-#   +1 no denominador: proteção contra divisão por zero.
+# BalanceSalaryRatio: ratio between account balance and estimated salary.
+#   Formula: Balance / (EstimatedSalary + 1)
+#   Captures customers who concentrate wealth in the bank (high balance
+#   relative to salary) — exactly those most contested by competitors.
+#   EDA (Finding 7): higher-balance customers show 25% more churn.
+#   +1 in the denominator: protection against division by zero.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 ratio_cfg = config.get('ratio_features', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 6: Features de Razão')
+logger.info('SECTION 6: Ratio Features')
 
 # %%
 ratio_transformer = RatioFeatureTransformer(ratios=ratio_cfg, logger=logger)
 df = ratio_transformer.transform(df)
 
 # %%
-# Estatísticas da nova feature
+# Statistics of the new feature
 new_ratio_cols = [spec['name'] for spec in ratio_cfg]
 logger.info(df[new_ratio_cols].describe())
 
 # %%
-# Correlação com o target
-logger.info('Correlação das features de razão com Exited:')
+# Correlation with the target
+logger.info('Correlation of ratio features with Exited:')
 for col in new_ratio_cols:
     if col in df.columns:
         corr = df[col].corr(df['Exited'])
@@ -337,26 +336,26 @@ for col in new_ratio_cols:
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 7 — Faixas Etárias (AgeGroup)
+# SECTION 7 — Age Bands (AgeGroup)
 #
-# A relação entre idade e churn é fortemente não-linear:
-#   < 30 anos  : churn moderado
-#   30–40 anos : menor churn (clientes estabilizados, engajados)
-#   40–50 anos : churn crescente (maior poder de decisão e mobilidade)
-#   50–60 anos : pico de churn (maior patrimônio, alvo principal da concorrência)
-#   60+ anos   : churn cai (menor mobilidade, relações mais consolidadas)
+# The relationship between age and churn is strongly non-linear:
+#   < 30 years : moderate churn
+#   30–40 years: lower churn (stabilized, engaged customers)
+#   40–50 years: rising churn (greater decision power and mobility)
+#   50–60 years: churn peak (higher wealth, prime target for competitors)
+#   60+ years  : churn falls (lower mobility, more established relationships)
 #
-# EDA: idade média dos que saíram = 44.8 anos vs 37.4 dos que ficaram
-#      Cohen's d = 0.747 — efeito médio-grande
+# EDA: average age of churners = 44.8 years vs 37.4 for stayers
+#      Cohen's d = 0.747 — medium-large effect
 #
-# Encoding ordinal (0–4): preserva a ordem natural e é compacto.
-# Modelos baseados em árvore (XGBoost, RF) trabalham bem com ordinais.
+# Ordinal encoding (0–4): preserves natural order and is compact.
+# Tree-based models (XGBoost, RF) work well with ordinals.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 age_cfg = config.get('age_group', {})
 logger.info('─' * 60)
-logger.info('SEÇÃO 7: Faixas Etárias (AgeGroup)')
+logger.info('SECTION 7: Age Bands (AgeGroup)')
 logger.info('Bins  : %s', age_cfg.get('bins'))
 logger.info('Labels: %s', age_cfg.get('labels'))
 
@@ -365,103 +364,103 @@ age_transformer = AgeBinTransformer(age_config=age_cfg, logger=logger)
 df = age_transformer.transform(df)
 
 # %%
-# Distribuição por faixa etária
+# Distribution by age band
 age_col = age_cfg.get('new_column', 'AgeGroup')
-logger.info('Distribuição de AgeGroup (ordinal):')
+logger.info('AgeGroup distribution (ordinal):')
 logger.info(df[age_col].value_counts().sort_index())
 
 # %%
-# Taxa de churn por faixa etária — valida o padrão identificado na EDA
-logger.info('Taxa de churn por AgeGroup:')
+# Churn rate by age band — validates the pattern identified in the EDA
+logger.info('Churn rate by AgeGroup:')
 logger.info(df.groupby(age_col)['Exited'].agg(['mean', 'count']).round(4))
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 8 — Encoding de Variáveis Categóricas
+# SECTION 8 — Categorical Encoding
 #
-# Geography (3 categorias sem ordem) → One-Hot: geo_France, geo_Germany, geo_Spain
-#   EDA: Germany tem churn 2× maior que France/Spain (Cramér's V=0.17, p<0.0001)
-#   OHE mantém cada país como preditor independente — sem assumir ordem.
+# Geography (3 categories without order) → One-Hot: geo_France, geo_Germany, geo_Spain
+#   EDA: Germany has churn 2× higher than France/Spain (Cramér's V=0.17, p<0.0001)
+#   OHE keeps each country as an independent predictor — without assuming order.
 #
-# Gender (2 categorias) → Binary: Gender_encoded (Male=0, Female=1)
-#   EDA: mulheres com 25.1% de churn vs 16.5% dos homens (Cramér's V=0.11)
-#   Encoding binário é compacto para variáveis com 2 categorias.
+# Gender (2 categories) → Binary: Gender_encoded (Male=0, Female=1)
+#   EDA: females have 25.1% churn vs 16.5% for males (Cramér's V=0.11)
+#   Binary encoding is compact for variables with 2 categories.
 #
-# Card Type (4 categorias) → One-Hot: card_DIAMOND, card_GOLD, card_PLATINUM, card_SILVER
-#   EDA: χ² p=0.168, Cramér's V=0.02 — sem associação linear significativa.
-#   Mantido: XGBoost/RF podem extrair interações via combinação de features.
+# Card Type (4 categories) → One-Hot: card_DIAMOND, card_GOLD, card_PLATINUM, card_SILVER
+#   EDA: χ² p=0.168, Cramér's V=0.02 — no significant linear association.
+#   Kept: XGBoost/RF can extract interactions via feature combinations.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 enc_cfg = config.get('categorical_encoding', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 8: Encoding de Variáveis Categóricas')
+logger.info('SECTION 8: Categorical Encoding')
 for spec in enc_cfg:
-    logger.info('  %-12s → método=%s', spec['column'], spec['method'])
+    logger.info('  %-12s → method=%s', spec['column'], spec['method'])
 
 # %%
 encoder = CategoricalEncoder(encoding_config=enc_cfg, logger=logger)
 df = encoder.transform(df)
 
 # %%
-# Verificação das colunas OHE criadas para Geography
-logger.info('Colunas OHE de Geography:')
+# Verify the OHE columns created for Geography
+logger.info('Geography OHE columns:')
 geo_cols = [c for c in df.columns if c.startswith('geo_')]
 logger.info('  %s', geo_cols)
 logger.info(df[geo_cols].sum())
 
 # %%
-# Verificação do encoding binário de Gender
-logger.info('Encoding binário de Gender:')
+# Verify binary encoding for Gender
+logger.info('Binary encoding of Gender:')
 if 'Gender_encoded' in df.columns:
     logger.info(df['Gender_encoded'].value_counts())
-    # Valida taxa de churn por gênero (deve replicar EDA: Female > Male)
-    logger.info('Taxa de churn por Gender_encoded (0=Male, 1=Female):')
+    # Validate churn rate by gender (should replicate EDA: Female > Male)
+    logger.info('Churn rate by Gender_encoded (0=Male, 1=Female):')
     logger.info(df.groupby('Gender_encoded')['Exited'].mean().round(4))
 
 # %%
-# Verificação das colunas OHE criadas para Card Type
-logger.info('Colunas OHE de Card Type:')
+# Verify the OHE columns created for Card Type
+logger.info('Card Type OHE columns:')
 card_cols = [c for c in df.columns if c.startswith('card_')]
 logger.info('  %s', card_cols)
 logger.info(df[card_cols].sum())
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 9 — Seleção de Features
+# SECTION 9 — Feature Selection
 #
-# Após as transformações, o DataFrame tem 30+ colunas.
-# Precisamos selecionar o subconjunto recomendado pelo EDA Report:
+# After the transformations, the DataFrame has 30+ columns.
+# We need to select the subset recommended by the EDA Report:
 #
-#   ✓ Numéricas originais (sem identificadores)
-#   ✓ Binárias originais (HasCrCard, IsActiveMember, Complain*)
-#   ✓ Features derivadas (flags, interações, razão, faixa etária)
-#   ✓ Encoding de Geography, Gender, Card Type
-#   ✗ Identificadores (já removidos na Seção 2)
-#   ✗ Categóricas originais (Geography, Gender, Card Type — substituídas)
+#   ✓ Original numeric features (without identifiers)
+#   ✓ Original binary features (HasCrCard, IsActiveMember, Complain*)
+#   ✓ Derived features (flags, interactions, ratio, age band)
+#   ✓ Encoding of Geography, Gender, Card Type
+#   ✗ Identifiers (already removed in Section 2)
+#   ✗ Original categoricals (Geography, Gender, Card Type — replaced)
 #
-# * Complain incluída com alerta de leakage — verificar antes de usar em prod.
+# * Complain included with a leakage warning — verify before using in production.
 #
-# FeatureSelector emite WARNING (não exceção) para colunas ausentes,
-# garantindo que o pipeline continue mesmo que alguma transformação
-# anterior tenha sido pulada.
+# FeatureSelector emits WARNING (not exception) for missing columns,
+# ensuring the pipeline continues even if some previous transformation
+# was skipped.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
 sel_cfg = config.get('feature_selection', {})
 features_to_keep = sel_cfg.get('features_to_keep', [])
 logger.info('─' * 60)
-logger.info('SEÇÃO 9: Seleção de Features')
-logger.info('Shape antes da seleção: %s', df.shape)
-logger.info('Features solicitadas: %d', len(features_to_keep))
+logger.info('SECTION 9: Feature Selection')
+logger.info('Shape before selection: %s', df.shape)
+logger.info('Requested features: %d', len(features_to_keep))
 
 # %%
 selector = FeatureSelector(features_to_keep=features_to_keep, logger=logger)
 df = selector.fit_transform(df)
 
 # %%
-logger.info('Shape após seleção: %s', df.shape)
-logger.info('Colunas selecionadas:')
+logger.info('Shape after selection: %s', df.shape)
+logger.info('Selected columns:')
 for i, col in enumerate(df.columns, 1):
     logger.info('  %2d. %s', i, col)
 
@@ -469,45 +468,45 @@ for i, col in enumerate(df.columns, 1):
 logger.info(df.head())
 
 # %%
-# Estatísticas finais do dataset de features
-logger.info('Estatísticas finais — dataset de features:')
+# Final statistics of the feature dataset
+logger.info('Final statistics — feature dataset:')
 logger.info(df.describe())
 
 # %%
 # ─────────────────────────────────────────────────────────────────────────────
-# SEÇÃO 10 — Persistência do Resultado
+# SECTION 10 — Result Persistence
 #
-# Salva o dataset de features em Parquet (formato colunar, comprimido).
-# Este arquivo é a ENTRADA da etapa de modelagem (modelagem.py).
+# Save the feature dataset in Parquet (columnar, compressed format).
+# This file is the INPUT for the modeling stage (modelagem.py).
 #
-# O arquivo pode ser:
-#   • Versionado no repositório (rastreabilidade de dados entre execuções)
-#   • Carregado diretamente pelo script de treinamento
-#   • Comparado entre execuções para detectar drift de features ao longo do tempo
+# The file can be:
+#   • Versioned in the repository (data traceability between runs)
+#   • Loaded directly by the training script
+#   • Compared between runs to detect feature drift over time
 # ─────────────────────────────────────────────────────────────────────────────
 
 # %%
-# Cria o diretório de saída se não existir
+# Create the output directory if it doesn't exist
 output_dir.mkdir(parents=True, exist_ok=True)
 logger.info('─' * 60)
-logger.info('SEÇÃO 10: Persistência')
-logger.info('Diretório de saída: %s', output_dir)
+logger.info('SECTION 10: Persistence')
+logger.info('Output directory: %s', output_dir)
 
 # %%
-# Salva em Parquet
+# Save to Parquet
 df.to_parquet(str(output_path), compression=compression, index=False)
 size_mb = output_path.stat().st_size / (1024 ** 2)
-logger.info('Arquivo salvo: %s (%.2f MB)', output_path, size_mb)
+logger.info('File saved: %s (%.2f MB)', output_path, size_mb)
 
 # %%
-# Validação pós-escrita: lê o schema sem carregar os dados
+# Post-write validation: read schema without loading the data
 schema_out = pq.read_schema(str(output_path))
-logger.info('Schema de saída (%d colunas):', len(schema_out))
+logger.info('Output schema (%d columns):', len(schema_out))
 for field in schema_out:
     logger.info('  %-35s %s', field.name, field.type)
 
 # %%
-# Lê uma amostra para confirmação visual
+# Read a sample for visual confirmation
 df_check = pd.read_parquet(str(output_path))
-logger.info('Verificação pós-leitura — shape: %s', df_check.shape)
+logger.info('Post-read verification — shape: %s', df_check.shape)
 logger.info(df_check.head())
