@@ -10,13 +10,7 @@ End-to-end MLOps project for predicting bank customer churn. Developed as a prac
 
 The objective is to identify, in advance, customers with a high probability of ending their relationship with the bank — before explicit signs become available — allowing proactive retention actions.
 
-> **Live demo →** *(deploy to Streamlit Cloud and paste the link here)*
-
----
-
-## Demo
-
-![Streamlit dashboard screenshot](docs/screenshot.png)
+> **Live demo →** *(coming soon — link will be added after Streamlit Cloud deploy)*
 
 ---
 

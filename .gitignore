@@ -12,8 +12,8 @@ env/
 mlflow.db
 mlruns/
 
-# Modelos serializados
-outputs/models/*.joblib
+# Serialized models — pipeline_final.joblib is committed (needed for Streamlit Cloud)
+# outputs/models/*.joblib
 
 # Python
 __pycache__/
