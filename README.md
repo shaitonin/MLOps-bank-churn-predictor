@@ -1,5 +1,6 @@
 # Bank Customer Churn Prediction — MLOps
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://bank-churn-predictor-byshaianetonin.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![CI](https://img.shields.io/github/actions/workflow/status/shaitonin/bank-churn-mlops-english/ci.yml?label=CI&logo=github)
 ![LightGBM](https://img.shields.io/badge/Model-LightGBM-brightgreen)
@@ -10,7 +11,7 @@ End-to-end MLOps project for predicting bank customer churn. Developed as a prac
 
 The objective is to identify, in advance, customers with a high probability of ending their relationship with the bank — before explicit signs become available — allowing proactive retention actions.
 
-> **Live demo →** *(coming soon — link will be added after Streamlit Cloud deploy)*
+> **Live demo → [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)**
 
 ---
 
