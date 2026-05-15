@@ -340,7 +340,7 @@ config       = load_yaml(CONFIG_DIR / 'pipeline.yaml')
 modeling_cfg = load_yaml(CONFIG_DIR / 'modeling.yaml')
 config.update(modeling_cfg)
 
-logger = get_logger('modelagem', config.get('logging'))
+logger = get_logger('modeling', config.get('logging'))
 
 logger.info('=== Bank Churn — Modeling with MLFlow + Optuna ===')
 

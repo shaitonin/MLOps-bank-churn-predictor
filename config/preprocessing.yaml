@@ -1,54 +1,54 @@
-# preprocessing.yaml — Configuração de Pré-processamento e Feature Engineering
+# preprocessing.yaml — Preprocessing and Feature Engineering Configuration
 #
 # Pipeline: data/processed/bank_churn.parquet
 #        → data/features/bank_churn_features.parquet
 
-# ── Saída ──────────────────────────────────────────────────────────────────────
+# ── Output ─────────────────────────────────────────────────────────────────────
 preprocessing:
   output_dir: "data/features"
   output_filename: "bank_churn_features.parquet"
   compression: "snappy"
 
-# ── 1. Remoção de Identificadores ─────────────────────────────────────────────
-# Colunas sem valor preditivo: índice sequencial, ID único e nome.
+# ── 1. Identifier Removal ──────────────────────────────────────────────────────
+# Columns with no predictive value: sequential index, unique ID, and name.
 drop_columns:
   - "RowNumber"
   - "CustomerId"
   - "Surname"
-  - "Complain"     # leakage potencial — ver eda_report.md seção 7
+  - "Complain"     # potential leakage — see eda_report.md section 7
 
-# ── 2. Flags Binárias ─────────────────────────────────────────────────────────
-# Capturam padrões binários identificados na EDA:
+# ── 2. Binary Flags ────────────────────────────────────────────────────────────
+# Capture binary patterns identified in the EDA:
 #
-# HasZeroBalance: 36.17% dos clientes têm saldo zero
-# HighRiskProducts: clientes com 3+ produtos têm churn de 82.7%–100%
+# HasZeroBalance: 36.17% of customers have zero balance
+# HighRiskProducts: customers with 3+ products have 82.7%–100% churn rate
 
 binary_flags:
   - column: "Balance"
     value: 0
     operator: "=="
     new_column: "HasZeroBalance"
-    inference_safe: true          
+    inference_safe: true
   - column: "NumOfProducts"
     value: 3
     operator: ">="
     new_column: "HighRiskProducts"
-    inference_safe: true         
+    inference_safe: true
 
-# ── 3. Features de Interação ──────────────────────────────────────────────────
-# Features derivadas que capturam sinais combinados identificados na EDA.
+# ── 3. Interaction Features ────────────────────────────────────────────────────
+# Derived features that capture combined signals identified in the EDA.
 #
 # AgeInactivity:
-#   Amplifica o sinal de desengajamento em clientes mais velhos.
-#   Fórmula: Age × (1 − IsActiveMember)
-#   Tipo: product_complement — col_a × (1 − col_b)
-# 
+#   Amplifies the disengagement signal for older customers.
+#   Formula: Age × (1 − IsActiveMember)
+#   Type: product_complement — col_a × (1 − col_b)
+#
 # EngagementScore:
-#   Score composto de engajamento do cliente (range: -1 a 3).
-#   Fórmula: IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance
-#   Tipo: engagement_composite
-#   ⚠ Requer HasZeroBalance criado na seção de flags binárias (Seção 2).
-#   Ordem obrigatória das colunas: [IsActiveMember, NumOfProducts, HasCrCard, HasZeroBalance]
+#   Composite customer engagement score (range: -1 to 3).
+#   Formula: IsActiveMember + (NumOfProducts == 2) + HasCrCard − HasZeroBalance
+#   Type: engagement_composite
+#   ⚠ Requires HasZeroBalance created in the binary flags section (Section 2).
+#   Required column order: [IsActiveMember, NumOfProducts, HasCrCard, HasZeroBalance]
 
 interaction_features:
   - name: "AgeInactivity"
@@ -59,23 +59,23 @@ interaction_features:
     type: "engagement_composite"
     columns: ["IsActiveMember", "NumOfProducts", "HasCrCard", "HasZeroBalance"]
 
-# ── 4. Features de Razão ──────────────────────────────────────────────────────
-# BalanceSalaryRatio: razão entre saldo em conta e salário estimado.
-#   Fórmula: Balance / (EstimatedSalary + 1)
-#   +1 no denominador (denominator_offset) protege contra divisão por zero.
+# ── 4. Ratio Features ──────────────────────────────────────────────────────────
+# BalanceSalaryRatio: ratio between account balance and estimated salary.
+#   Formula: Balance / (EstimatedSalary + 1)
+#   +1 in the denominator (denominator_offset) protects against division by zero.
 ratio_features:
   - name: "BalanceSalaryRatio"
     numerator: "Balance"
     denominator: "EstimatedSalary"
     denominator_offset: 1
 
-# ── 5. Faixas Etárias ─────────────────────────────────────────────────────────
-# AgeGroup: discretiza a idade em grupos para capturar a relação não-linear
-#   entre idade e churn identificada na EDA.
+# ── 5. Age Groups ──────────────────────────────────────────────────────────────
+# AgeGroup: discretizes age into groups to capture the non-linear relationship
+#   between age and churn identified in the EDA.
 #
-# ordinal_encoding: true → converte labels para inteiros (0 a 4)
-#   Modelos baseados em árvore (XGBoost, RF) preferem ordinais.
-#   Para regressão linear: OHE pode ser aplicado no pipeline de modelagem.
+# ordinal_encoding: true → converts labels to integers (0 to 4)
+#   Tree-based models (XGBoost, RF) prefer ordinal encoding.
+#   For linear regression: OHE can be applied in the modeling pipeline.
 age_group:
   column: "Age"
   new_column: "AgeGroup"
@@ -89,16 +89,16 @@ age_group:
     "50-60": 3
     "60+":   4
 
-# ── 6. Encoding de Variáveis Categóricas ──────────────────────────────────────
-# Geography   → One-Hot (3 categorias sem ordem natural: France, Germany, Spain)
+# ── 6. Categorical Encoding ────────────────────────────────────────────────────
+# Geography   → One-Hot (3 categories with no natural order: France, Germany, Spain)
 #
 # Gender      → Binary encoding (Male=0, Female=1)
 #
-# Card Type   → removida — sem associação com churn
+# Card Type   → dropped — no association with churn
 #
-# Métodos:
-#   "one_hot" → pd.get_dummies com prefixo (drop_first=false mantém todas as categorias)
-#   "binary"  → mapeamento manual para 0/1 via dicionário
+# Methods:
+#   "one_hot" → pd.get_dummies with prefix (drop_first=false keeps all categories)
+#   "binary"  → manual 0/1 mapping via dictionary
 categorical_encoding:
   - column: "Geography"
     method: "one_hot"
@@ -111,24 +111,24 @@ categorical_encoding:
       "Female": 1
     new_column: "Gender_encoded"
 
-# ── 7. Imputação (referência — executar no pipeline de modelagem) ──────────────
-# ⚠ AVISO MLOps — Data Leakage:
-#   Imputação é STATEFUL: aprende medianas e modas exclusivamente dos dados
-#   de treino. Ajustar ANTES do split treino/holdout vaza informação do
-#   conjunto de teste para o treino → data leakage.
+# ── 7. Imputation (reference — apply inside modeling pipeline) ─────────────────
+# ⚠ MLOps WARNING — Data Leakage:
+#   Imputation is STATEFUL: it learns medians and modes exclusively from training
+#   data. Fitting BEFORE the train/holdout split leaks test information into
+#   training data → data leakage.
 #
-#   SOLUÇÃO: GroupMedianImputer é aplicado DENTRO do Pipeline de modelagem
-#   (modelagem.py), APÓS o split treino/holdout.
-#   Este bloco é REFERÊNCIA de configuração; não é executado no preprocessamento.
+#   SOLUTION: GroupMedianImputer is applied INSIDE the modeling pipeline
+#   (modeling.py), AFTER the train/holdout split.
+#   This block is a CONFIGURATION REFERENCE; it is not executed during preprocessing.
 #
-# Estratégias por coluna (EDA Seção 8.3):
-#   CreditScore     → mediana por Geography (score varia por região geográfica)
-#   Age             → mediana global (37 anos; distribuição assimétrica — mediana > média)
-#   Balance         → constante zero (36% dos clientes têm saldo zero — valor legítimo)
-#   EstimatedSalary → mediana global (100.194; distribuição uniforme)
-#   NumOfProducts   → moda (1; valor mais comum)
-#   Tenure          → mediana global (5 anos; distribuição uniforme)
-#   Categóricas     → moda (valor mais frequente de cada coluna)
+# Strategies by column (EDA Section 8.3):
+#   CreditScore     → median by Geography (score varies by geographic region)
+#   Age             → global median (37; skewed distribution — median > mean)
+#   Balance         → constant zero (36% of customers have zero balance — legitimate value)
+#   EstimatedSalary → global median (100,194; uniform distribution)
+#   NumOfProducts   → mode (1; most common value)
+#   Tenure          → global median (5 years; uniform distribution)
+#   Categoricals    → mode (most frequent value in each column)
 imputation:
   - column: "CreditScore"
     strategy: "median_by_group"
@@ -155,126 +155,126 @@ imputation:
   - column: "Card Type"
     strategy: "mode"
 
-# ── 8. Tratamento de Desbalanceamento (referência — configurar no modelo) ──────
-# ⚠ AVISO MLOps: Estas estratégias são aplicadas durante o treinamento do modelo.
-#   NÃO fazem parte do pré-processamento stateless.
+# ── 8. Class Imbalance Handling (reference — configure in the model) ───────────
+# ⚠ MLOps WARNING: These strategies are applied during model training.
+#   They are NOT part of stateless preprocessing.
 #
-# EDA Seção 8.2: razão retidos:churned = 7.962:2.038 ≈ 3.91:1
+# EDA Section 8.2: retained:churned ratio = 7.962:2.038 ≈ 3.91:1
 #
-# scale_pos_weight: parâmetro nativo XGBoost/LightGBM — sem custo computacional
-# smote: oversampling sintético — gera amostras artificiais da classe minoritária
-# threshold_tuning: ajuste pós-treinamento — reduz threshold para maximizar recall
-#   da classe churn (falso negativo custa ~25× mais que falso positivo)
+# scale_pos_weight: native XGBoost/LightGBM parameter — no computational cost
+# smote: synthetic oversampling — generates artificial minority-class samples
+# threshold_tuning: post-training adjustment — lowers threshold to maximize recall
+#   for the churn class (false negative costs ~25× more than false positive)
 class_imbalance:
   ratio: 3.91
-  scale_pos_weight: 3.91           # para XGBoost/LightGBM
+  scale_pos_weight: 3.91           # for XGBoost/LightGBM
   smote:
     k_neighbors: 5
     random_state: 42
   threshold_tuning:
     default_threshold: 0.5
-    recommended_threshold: 0.3    # maximiza recall da classe churn
+    recommended_threshold: 0.3    # maximizes churn class recall
 
-# ── 9. Escalonamento (referência — executar no pipeline de modelagem) ──────────
-# ⚠ AVISO MLOps — Data Leakage:
-#   Escalonamento é STATEFUL: aprende mediana/IQR e média/std exclusivamente dos
-#   dados de treino. Aplicar DENTRO do Pipeline de modelagem, APÓS o split.
-#   Nunca antes — causaria data leakage.
+# ── 9. Scaling (reference — apply inside modeling pipeline) ────────────────────
+# ⚠ MLOps WARNING — Data Leakage:
+#   Scaling is STATEFUL: it learns median/IQR and mean/std exclusively from
+#   training data. Apply INSIDE the modeling pipeline, AFTER the split.
+#   Never before — it would cause data leakage.
 #
-# Aplicado APENAS para Regressão Logística. Random Forest e XGBoost são
-# invariantes à escala das features — não precisam de escalonamento.
+# Applied ONLY for Logistic Regression. Random Forest and XGBoost are
+# scale-invariant (tree-based) — they do not require scaling.
 #
-# Estratégias por coluna (EDA Seção 8.1):
-#   StandardScaler: média zero, desvio padrão unitário
-#     → CreditScore (quase normal, skew=-0.07)
-#     → EstimatedSalary (uniforme, sem outliers)
-#     → Point Earned (uniforme, sem outliers)
-#     → Satisfaction Score (discreta 1-5)
+# Strategies by column (EDA Section 8.1):
+#   StandardScaler: zero mean, unit standard deviation
+#     → CreditScore (near-normal, skew=-0.07)
+#     → EstimatedSalary (uniform, no outliers)
+#     → Point Earned (uniform, no outliers)
+#     → Satisfaction Score (discrete 1-5)
 #
-#   RobustScaler: mediana zero, IQR unitário (resistente a outliers e assimetria)
-#     → Age (assimétrica, skew=+1.01; outliers de idosos válidos)
-#     → Balance (bimodal com 36% de zeros)
+#   RobustScaler: zero median, unit IQR (resistant to outliers and skewness)
+#     → Age (skewed, skew=+1.01; valid elderly outliers)
+#     → Balance (bimodal with 36% zeros)
 #
-#   log_transform_before_robust: np.log1p aplicado antes do RobustScaler
-#     → Age: reduz assimetria positiva antes do escalonamento
-#       (log1p compatível com zeros, se houver)
+#   log_transform_before_robust: np.log1p applied before RobustScaler
+#     → Age: reduces positive skewness before scaling
+#       (log1p compatible with zeros, if any)
 #
-#   Não escalonadas: binárias, ordinais e encodings — já em escala reduzida
+#   Not scaled: binary, ordinal, and encodings — already in reduced scale
 scaling:
   standard_columns:
-    - "CreditScore"         # skew=-0.07 (quase normal) — StandardScaler adequado
-    - "EstimatedSalary"     # uniforme, sem outliers
-    - "Point Earned"        # uniforme, sem outliers
-    - "Satisfaction Score"  # discreta 1-5, sem outliers
+    - "CreditScore"         # skew=-0.07 (near-normal) — StandardScaler appropriate
+    - "EstimatedSalary"     # uniform, no outliers
+    - "Point Earned"        # uniform, no outliers
+    - "Satisfaction Score"  # discrete 1-5, no outliers
   robust_columns:
-    - "Age"                 # skew=+1.01 (assimétrica), outliers de idosos válidos
-    - "Balance"             # bimodal: 36% zeros + concentração ~100k
+    - "Age"                 # skew=+1.01 (skewed), valid elderly outliers
+    - "Balance"             # bimodal: 36% zeros + concentration ~100k
   log_transform_before_robust:
-    - "Age"                 # log1p reduz cauda direita antes do RobustScaler
+    - "Age"                 # log1p reduces right tail before RobustScaler
   not_scaled:
-    # Binárias — já em escala 0/1
+    # Binary — already on 0/1 scale
     - "HasCrCard"
     - "IsActiveMember"
     - "HasZeroBalance"
     - "HighRiskProducts"
-    # Ordinais — escala reduzida e interpretável
+    # Ordinal — reduced and interpretable scale
     - "AgeGroup"            # 0–4
     - "NumOfProducts"       # 1–4
     - "Tenure"              # 0–10
-    # Features derivadas — escala depende das originais mas não distorce modelos de árvore
+    # Derived features — scale depends on originals but does not distort tree models
     - "AgeInactivity"
     - "EngagementScore"
     - "BalanceSalaryRatio"
-    # Encodings — já em escala 0/1
+    # Encodings — already on 0/1 scale
     - "geo_France"
     - "geo_Germany"
     - "geo_Spain"
     - "Gender_encoded"
 
-# ── 10. Seleção de Features ───────────────────────────────────────────────────
-# Subconjunto final para modelagem — baseado no EDA Report (Seções 8.1 e 8.8).
+# ── 10. Feature Selection ──────────────────────────────────────────────────────
+# Final subset for modeling — based on the EDA Report (Sections 8.1 and 8.8).
 #
-# Excluídos: RowNumber, CustomerId, Surname (identificadores sem valor preditivo)
-# Excluídos: Geography, Gender, "Card Type" (substituídas pelo encoding)
-# Mantido: Exited (target) para facilitar o split treino/teste na modelagem
+# Excluded: RowNumber, CustomerId, Surname (identifiers with no predictive value)
+# Excluded: Geography, Gender, "Card Type" (replaced by encodings)
+# Kept: Exited (target) to facilitate train/test split in modeling
 #
-# ⚠ Features sem associação linear significativa (EDA Seção 8.8):
+# ⚠ Features with no significant linear association (EDA Section 8.8):
 #   HasCrCard, EstimatedSalary, "Satisfaction Score", "Point Earned"
-#   → Incluídas: modelos não-lineares (XGBoost, RF) podem extrair valor via
-#   interações. Usar SHAP values para confirmar antes de excluir.
+#   → Included: non-linear models (XGBoost, RF) may extract value via
+#   interactions. Use SHAP values to confirm before excluding.
 #
-# ⚠ Sobre Complain (EDA Seção 7):
-#   → Incluída mas investigar data leakage antes de usar em produção.
-#   → Treinar modelo SEM Complain para comparação (ver eda_report.md seção 7).
+# ⚠ On Complain (EDA Section 7):
+#   → Included but investigate data leakage before using in production.
+#   → Train model WITHOUT Complain for comparison (see eda_report.md section 7).
 feature_selection:
   target: "Exited"
   features_to_keep:
-    # ── Numéricas originais ──
+    # ── Original numeric ──
     - "CreditScore"
     - "Age"
     - "Tenure"
     - "Balance"
     - "NumOfProducts"
-    - "HasCrCard"            # ⚠ sem associação sig. (p=0.485) — verificar com SHAP
+    - "HasCrCard"            # ⚠ no significant association (p=0.485) — verify with SHAP
     - "IsActiveMember"
-    - "EstimatedSalary"      # ⚠ sem associação sig. (p=0.211) — verificar com SHAP
-    - "Satisfaction Score"   # ⚠ sem associação sig. (p=0.559) — verificar com SHAP
-    - "Point Earned"         # ⚠ sem associação sig. (p=0.644) — verificar com SHAP
-    # ── Features derivadas — flags ──
+    - "EstimatedSalary"      # ⚠ no significant association (p=0.211) — verify with SHAP
+    - "Satisfaction Score"   # ⚠ no significant association (p=0.559) — verify with SHAP
+    - "Point Earned"         # ⚠ no significant association (p=0.644) — verify with SHAP
+    # ── Derived features — flags ──
     - "HasZeroBalance"
     - "HighRiskProducts"
-    # ── Features derivadas — interações ──
+    # ── Derived features — interactions ──
     - "AgeInactivity"
     - "EngagementScore"
-    # ── Features derivadas — razão ──
+    # ── Derived features — ratio ──
     - "BalanceSalaryRatio"
-    # ── Features derivadas — faixa etária ──
+    # ── Derived features — age group ──
     - "AgeGroup"
-    # ── Encoding de Geography ──
+    # ── Geography encoding ──
     - "geo_France"
     - "geo_Germany"
     - "geo_Spain"
-    # ── Encoding de Gender ──
+    # ── Gender encoding ──
     - "Gender_encoded"
     # ── Target ──
     - "Exited"

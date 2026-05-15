@@ -1,35 +1,35 @@
-# quality.yaml — Configuração de qualidade de dados via Great Expectations
+# quality.yaml — Data Quality Configuration via Great Expectations
 #
-# Este arquivo define TODAS as regras de qualidade. O código (src/quality_checks.py)
-# é genérico: lê este YAML e executa as verificações dinamicamente.
+# This file defines ALL quality rules. The code (src/quality_checks.py)
+# is generic: it reads this YAML and executes the checks dynamically.
 #
-# Tipos de expectation usam snake_case (padrão GE).
-# kwargs seguem a assinatura exata de cada classe GE.
+# Expectation types use snake_case (GE standard).
+# kwargs follow the exact signature of each GE class.
 #
-# Todos os parâmetros numéricos foram derivados do dataset real (EDA Seção 9)
-# usando percentis robustos (p01–p99) + tolerâncias estatísticas (±2σ).
+# All numeric parameters were derived from the real dataset (EDA Section 9)
+# using robust percentiles (p01–p99) + statistical tolerances (±2σ).
 
 quality:
   suite_name: "bank_churn_suite"
-  # fail_pipeline_on_error: true → lança RuntimeError se qualquer check falhar
-  # Use true em produção, false durante exploração / desenvolvimento
+  # fail_pipeline_on_error: true → raises RuntimeError if any check fails
+  # Use true in production, false during exploration / development
   fail_pipeline_on_error: false
   output_dir: "outputs/quality"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Expectations de TABELA
-# Validam propriedades globais do dataset
+# TABLE Expectations
+# Validate global dataset properties
 # ─────────────────────────────────────────────────────────────────────────────
 table_expectations:
 
-  # Dataset observado: 10.000 linhas
-  # Tolerância ±20%: mínimo 8.000, máximo 12.000
+  # Observed dataset: 10,000 rows
+  # Tolerance ±20%: minimum 8,000, maximum 12,000
   - type: expect_table_row_count_to_be_between
     kwargs:
       min_value: 8000
       max_value: 12000
 
-  # Garante que o schema não mudou — nenhuma coluna foi adicionada ou removida
+  # Ensures the schema has not changed — no columns added or removed
   - type: expect_table_columns_to_match_set
     kwargs:
       column_set:
@@ -54,112 +54,112 @@ table_expectations:
       exact_match: true
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Expectations de COLUNA
+# COLUMN Expectations
 # ─────────────────────────────────────────────────────────────────────────────
 column_expectations:
 
-  # ── Variável alvo ──────────────────────────────────────────────────────────
-  # Distribuição observada: 79.62% retidos (0), 20.38% churned (1)
+  # ── Target variable ────────────────────────────────────────────────────────
+  # Observed distribution: 79.62% retained (0), 20.38% churned (1)
   Exited:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: [0, 1]
 
-  # ── Features numéricas contínuas ───────────────────────────────────────────
+  # ── Continuous numeric features ────────────────────────────────────────────
 
-  # Dados observados: min=350, max=850, média=650.5, std=96.7, skew=-0.07
+  # Observed data: min=350, max=850, mean=650.5, std=96.7, skew=-0.07
   CreditScore:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 432      # p01 observado
-        max_value: 850      # p99 observado (máximo histórico de score)
+        min_value: 432      # p01 observed
+        max_value: 850      # p99 observed (historical score maximum)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 457.2    # média - 2σ = 650.5 - 2×96.7
-        max_value: 843.8    # média + 2σ = 650.5 + 2×96.7
+        min_value: 457.2    # mean - 2σ = 650.5 - 2×96.7
+        max_value: 843.8    # mean + 2σ = 650.5 + 2×96.7
     - type: expect_column_stdev_to_be_between
       kwargs:
         min_value: 48.3     # std × 0.5
         max_value: 145.0    # std × 1.5
 
-  # Dados observados: min=18, max=92, média=38.9, std=10.5, skew=+1.01 (assimétrico)
+  # Observed data: min=18, max=92, mean=38.9, std=10.5, skew=+1.01 (skewed)
   Age:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 21       # p01 observado (mínimo legal realista = 18)
-        max_value: 72       # p99 observado (cauda longa até 92, mas rara)
+        min_value: 21       # p01 observed (realistic legal minimum = 18)
+        max_value: 72       # p99 observed (long tail up to 92, but rare)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 17.9     # média - 2σ = 38.9 - 2×10.5
-        max_value: 59.9     # média + 2σ = 38.9 + 2×10.5
+        min_value: 17.9     # mean - 2σ = 38.9 - 2×10.5
+        max_value: 59.9     # mean + 2σ = 38.9 + 2×10.5
     - type: expect_column_stdev_to_be_between
       kwargs:
         min_value: 5.2      # std × 0.5 = 10.5 × 0.5
         max_value: 15.7     # std × 1.5 = 10.5 × 1.5
 
-  # Dados observados: min=0, max=250.898, mediana=97.199
-  # ATENÇÃO: 36.17% dos clientes têm saldo = 0 — comportamento legítimo, não erro
+  # Observed data: min=0, max=250,898, median=97,199
+  # NOTE: 36.17% of customers have balance = 0 — legitimate behavior, not an error
   Balance:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0        # zero é valor legítimo e frequente
-        max_value: 250898   # máximo histórico observado
+        min_value: 0        # zero is a legitimate and frequent value
+        max_value: 250898   # historical maximum observed
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 0        # média pode ser baixa (distribuição bimodal)
-        max_value: 201281   # média + 2σ = 76.486 + 2×62.397
+        min_value: 0        # mean can be low (bimodal distribution)
+        max_value: 201281   # mean + 2σ = 76,486 + 2×62,397
 
-  # Dados observados: min=11.58, max=199.992, uniforme
+  # Observed data: min=11.58, max=199,992, uniform
   EstimatedSalary:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0        # não pode ser negativo
-        max_value: 200000   # limite observado (~200k)
+        min_value: 0        # cannot be negative
+        max_value: 200000   # observed limit (~200k)
         mostly: 0.99
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 0        # distribuição uniforme — média pode variar
-        max_value: 215111   # média + 2σ = 100.090 + 2×57.510
+        min_value: 0        # uniform distribution — mean can vary
+        max_value: 215111   # mean + 2σ = 100,090 + 2×57,510
 
-  # Dados observados: min=119, max=1.000, uniforme
+  # Observed data: min=119, max=1,000, uniform
   Point Earned:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 119      # mínimo histórico do programa de pontos
-        max_value: 1000     # máximo do programa de pontos
+        min_value: 119      # historical minimum of the points program
+        max_value: 1000     # maximum of the points program
     - type: expect_column_mean_to_be_between
       kwargs:
-        min_value: 154.7    # média - 2σ = 606.5 - 2×225.9
-        max_value: 1058.4   # média + 2σ (truncar em 1000 na prática)
+        min_value: 154.7    # mean - 2σ = 606.5 - 2×225.9
+        max_value: 1058.4   # mean + 2σ (cap at 1000 in practice)
 
-  # ── Features numéricas discretas ───────────────────────────────────────────
+  # ── Discrete numeric features ───────────────────────────────────────────────
 
-  # Dados observados: min=0, max=10, média=5.01, uniforme
+  # Observed data: min=0, max=10, mean=5.01, uniform
   Tenure:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 0        # cliente novo
-        max_value: 10       # máximo histórico = 10 anos
+        min_value: 0        # new customer
+        max_value: 10       # historical maximum = 10 years
 
-  # Dados observados: min=1, max=4, mediana=1
-  # ATENÇÃO: relação não-linear com churn — 3-4 produtos = altíssimo churn
+  # Observed data: min=1, max=4, median=1
+  # NOTE: non-linear relationship with churn — 3-4 products = very high churn
   NumOfProducts:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
       kwargs:
-        min_value: 1        # mínimo: pelo menos 1 produto contratado
-        max_value: 4        # máximo histórico observado
+        min_value: 1        # minimum: at least 1 product subscribed
+        max_value: 4        # historical maximum observed
 
-  # Escala fixa de satisfação: 1 (péssimo) a 5 (ótimo)
+  # Fixed satisfaction scale: 1 (very poor) to 5 (excellent)
   Satisfaction Score:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_between
@@ -170,7 +170,7 @@ column_expectations:
       kwargs:
         value_set: [1, 2, 3, 4, 5]
 
-  # ── Variáveis binárias ─────────────────────────────────────────────────────
+  # ── Binary variables ───────────────────────────────────────────────────────
   HasCrCard:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set
@@ -183,32 +183,32 @@ column_expectations:
       kwargs:
         value_set: [0, 1]
 
-  # Correlação de Pearson com Exited = 0.9957 — investigar data leakage (EDA Seção 7)
+  # Pearson correlation with Exited = 0.9957 — investigate data leakage (EDA Section 7)
   Complain:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: [0, 1]
 
-  # ── Variáveis categóricas ──────────────────────────────────────────────────
+  # ── Categorical variables ──────────────────────────────────────────────────
 
-  # Distribuição observada: France=50.1%, Germany=25.1%, Spain=24.8%
-  # Germany tem churn 2× maior — desvio desta distribuição merece atenção
+  # Observed distribution: France=50.1%, Germany=25.1%, Spain=24.8%
+  # Germany has 2× higher churn — deviation from this distribution warrants attention
   Geography:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: ["France", "Germany", "Spain"]
 
-  # Distribuição observada: Male=54.57%, Female=45.43%
+  # Observed distribution: Male=54.57%, Female=45.43%
   Gender:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set
       kwargs:
         value_set: ["Male", "Female"]
 
-  # Distribuição perfeitamente balanceada (~25% cada categoria)
-  # Qualquer desvio grande indicaria problema de coleta ou encoding
+  # Perfectly balanced distribution (~25% per category)
+  # Any large deviation would indicate a collection or encoding issue
   Card Type:
     - type: expect_column_values_to_not_be_null
     - type: expect_column_values_to_be_in_set

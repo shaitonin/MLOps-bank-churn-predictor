@@ -60,9 +60,9 @@ DataImputer → FeatureReducer(none) → SMOTE → LGBMClassifier
 │   └── eda_analysis.py           # Full EDA engine (1 100+ lines)
 ├── notebooks/                    # Pipeline stages (run in order)
 │   ├── ingestion_pipeline.py
-│   ├── qualidade.py
+│   ├── quality_pipeline.py
 │   ├── preprocessing_pipeline.py
-│   ├── modelagem.py
+│   ├── modeling.py
 │   ├── dimensionality_reduction.py
 │   ├── deploy.py
 │   └── monitoring.py
@@ -137,13 +137,13 @@ brew install libomp
 python notebooks/ingestion_pipeline.py
 
 # 2. Data quality checks
-python notebooks/qualidade.py
+python notebooks/quality_pipeline.py
 
 # 3. Preprocessing and feature engineering
 python notebooks/preprocessing_pipeline.py
 
 # 4. Experimentation (Optuna + MLflow — ~6h for 30 trials × 4 models)
-python notebooks/modelagem.py
+python notebooks/modeling.py
 
 # 5. Dimensionality reduction experiment
 python notebooks/dimensionality_reduction.py

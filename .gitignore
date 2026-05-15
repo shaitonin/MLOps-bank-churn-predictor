@@ -1,9 +1,9 @@
-# Secrets e credenciais
+# Secrets
 secrets.env
 *.env
 .env
 
-# Ambiente virtual
+# venv
 venv/
 .venv/
 env/

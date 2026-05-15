@@ -1,22 +1,21 @@
 # pipeline.yaml
 
-#informações gerais
 pipeline:
   name: "bank-churn-data-pipeline"
   version: "1.0.0"
-  description: "Pipeline de ingestão dos dados de churn de clientes (Bank Churn - Kaggle)."
+  description: "Ingestion pipeline for bank customer churn data (Bank Churn - Kaggle)."
 
 paths:
   raw_data_dir: "data/raw"
   processed_data_dir: "data/processed"
-  output_filename: "bank_churn.parquet" #parquet é um formato de arquivo otimizado para leitura e escrita de grandes volumes de dados, muito utilizado em projetos de ciência de dados e machine learning.
+  output_filename: "bank_churn.parquet" 
 
 logging:
   level: "INFO"     # DEBUG | INFO | WARNING | ERROR
   format: "%(asctime)s [%(levelname)s] %(name)s - %(message)s" 
   datefmt: "%Y-%m-%d %H:%M:%S" 
-  log_to_file: false #se true, os logs serão gravados em um arquivo, caso contrário, serão exibidos no console
-  log_file: "pipeline.log" #nome do arquivo de log, caso log_to_file seja true
+  log_to_file: false 
+  log_file: "pipeline.log" 
 
 execution:
   skip_download_if_exists: true

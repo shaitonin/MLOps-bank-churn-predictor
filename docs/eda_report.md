@@ -24,7 +24,7 @@
 
 **Churn** — the voluntary departure of customers — is one of the primary drivers of recurring revenue loss in the banking sector. This dataset records the history of **10,000 customers** from a European bank with operations in **France, Germany, and Spain**, consolidating behavioral, financial, and profile variables for each customer. The target variable (`Exited`) indicates whether the customer terminated the relationship with the bank.
 
-The analytical objective is to identify proactively and in advance which customers have the highest probability of departure — enabling targeted retention interventions before the decision is finalized.
+The analytical objective is to identify proactively and in advance which customers have the highest probability of leaving — enabling targeted retention interventions before the decision is finalized.
 
 The available variables cover four dimensions:
 
@@ -249,7 +249,7 @@ When segmenting churn by credit score quartile within each country, the pattern 
 | Credit Score Quartile | France | Germany | Spain |
 |---|---|---|---|
 | Q1 (lowest score) | 17.3% | **35.6%** | 17.6% |
-| Q2 | 17.5% | **32.0% | 16.6% |
+| Q2 | 17.5% | **32.0%** | 16.6% |
 | Q3 | 15.1% | **28.1%** | 15.4% |
 | Q4 (highest score) | 14.8% | **33.7%** | 17.1% |
 
