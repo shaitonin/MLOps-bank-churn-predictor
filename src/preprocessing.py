@@ -397,8 +397,13 @@ class BinaryFlagTransformer(BaseEstimator, TransformerMixin):
         df = transformer.fit_transform(df)
     """
 
-    def __init__(self, flags: list[dict], logger: Any = None) -> None:
-        self.flags = flags
+    _DEFAULTS = [
+        {"column": "Balance", "value": 0, "operator": "==", "new_column": "HasZeroBalance"},
+        {"column": "NumOfProducts", "value": 3, "operator": ">=", "new_column": "HighRiskProducts"},
+    ]
+
+    def __init__(self, flags: list[dict] = None, logger: Any = None) -> None:
+        self.flags = flags if flags is not None else self._DEFAULTS
         self.logger = logger
 
     def _log(self, msg: str, *args: Any) -> None:
@@ -655,8 +660,11 @@ class AgeBinTransformer(BaseEstimator, TransformerMixin):
         df = transformer.fit_transform(df)
     """
 
-    def __init__(self, age_config: dict, logger: Any = None) -> None:
-        self.age_config = age_config
+    def __init__(self, age_config: dict = None, logger: Any = None) -> None:
+        self.age_config = age_config if age_config is not None else {
+            "ordinal_encoding": True,
+            "ordinal_map": {"<30": 0, "30-40": 1, "40-50": 2, "50-60": 3, "60+": 4},
+        }
         self.logger = logger
 
     def _log(self, msg: str, *args: Any) -> None:
@@ -745,8 +753,13 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
         df = encoder.fit_transform(df)
     """
 
-    def __init__(self, encoding_config: list[dict], logger: Any = None) -> None:
-        self.encoding_config = encoding_config
+    _DEFAULTS = [
+        {"column": "Geography", "method": "one_hot", "prefix": "Geography", "drop_first": False},
+        {"column": "Gender", "method": "one_hot", "prefix": "Gender", "drop_first": False},
+    ]
+
+    def __init__(self, encoding_config: list[dict] = None, logger: Any = None) -> None:
+        self.encoding_config = encoding_config if encoding_config is not None else self._DEFAULTS
         self.logger = logger
 
     def _log(self, msg: str, *args: Any) -> None:
@@ -779,7 +792,7 @@ class CategoricalEncoder(BaseEstimator, TransformerMixin):
                     prefix=prefix,
                     drop_first=drop_first,
                 ).astype(int)
-                X = pd.concat([X, dummies], axis=1)
+                X = pd.concat([X.drop(columns=[col]), dummies], axis=1)
                 self._log(
                     "CategoricalEncoder: OHE '%s' (prefix='%s') → %s",
                     col, prefix, list(dummies.columns),
