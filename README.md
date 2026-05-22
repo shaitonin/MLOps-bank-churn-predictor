@@ -2,7 +2,7 @@
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://bank-churn-predictor-byshaianetonin.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
-![CI](https://img.shields.io/github/actions/workflow/status/shaitonin/bank-churn-mlops-english/ci.yml?label=CI&logo=github)
+![CI](https://img.shields.io/github/actions/workflow/status/shaitonin/MLOps-bank-churn-predictor/ci.yml?label=CI&logo=github)
 ![LightGBM](https://img.shields.io/badge/Model-LightGBM-brightgreen)
 ![MLflow](https://img.shields.io/badge/Tracking-MLflow-blue?logo=mlflow)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
@@ -98,8 +98,8 @@ DataImputer → FeatureReducer(none) → SMOTE → LGBMClassifier
 ### Option 1 — Docker (recommended)
 
 ```bash
-git clone <repo>
-cd bank-churn-mlops-english
+git clone https://github.com/shaitonin/MLOps-bank-churn-predictor.git
+cd MLOps-bank-churn-predictor
 docker compose up
 ```
 
@@ -109,8 +109,8 @@ docker compose up
 ### Option 2 — Local
 
 ```bash
-git clone <repo>
-cd bank-churn-mlops-english
+git clone https://github.com/shaitonin/MLOps-bank-churn-predictor.git
+cd MLOps-bank-churn-predictor
 
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
