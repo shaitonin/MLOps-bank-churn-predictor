@@ -1,0 +1,34 @@
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./outputs/models:/app/outputs/models:ro
+      - ./mlflow.db:/app/mlflow.db:ro
+    environment:
+      - MODEL_PATH=/app/outputs/models/pipeline_final.joblib
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./outputs/models:/app/outputs/models:ro
+      - ./mlflow.db:/app/mlflow.db:ro
+    environment:
+      - MODEL_PATH=/app/outputs/models/pipeline_final.joblib
+    restart: unless-stopped
+    depends_on:
+      - api
