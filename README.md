@@ -1,6 +1,6 @@
 # Bank Customer Churn Prediction — MLOps
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://bank-churn-predictor-byshaianetonin.streamlit.app)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit)](https://bank-churn-predictor-byshaiane.streamlit.app)
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![CI](https://img.shields.io/github/actions/workflow/status/shaitonin/MLOps-bank-churn-predictor/ci.yml?label=CI&logo=github)
 ![LightGBM](https://img.shields.io/badge/Model-LightGBM-brightgreen)
@@ -103,7 +103,7 @@ cd MLOps-bank-churn-predictor
 docker compose up
 ```
 
-- Streamlit dashboard: http://localhost:8501
+- Streamlit dashboard: [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)
 - FastAPI docs: http://localhost:8000/docs
 
 ### Option 2 — Local
@@ -181,9 +181,11 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 ### Visual Interface (Streamlit)
+
+> Live demo available at [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)
+
 ```bash
 streamlit run app/streamlit_app.py
-# http://localhost:8501
 ```
 
 ---
