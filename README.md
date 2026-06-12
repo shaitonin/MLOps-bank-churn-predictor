@@ -11,7 +11,7 @@ End-to-end MLOps project for predicting bank customer churn. Developed as a prac
 
 The objective is to identify, in advance, customers with a high probability of ending their relationship with the bank — before explicit signs become available — allowing proactive retention actions.
 
-> **Live demo → [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)**
+> **Live demo → [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaiane.streamlit.app)**
 
 ---
 
@@ -103,7 +103,7 @@ cd MLOps-bank-churn-predictor
 docker compose up
 ```
 
-- Streamlit dashboard: [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)
+- Streamlit dashboard: [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaiane.streamlit.app)
 - FastAPI docs: http://localhost:8000/docs
 
 ### Option 2 — Local
@@ -182,7 +182,7 @@ uvicorn app.main:app --reload --port 8000
 
 ### Visual Interface (Streamlit)
 
-> Live demo available at [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaianetonin.streamlit.app)
+> Live demo available at [bank-churn-predictor-byshaianetonin.streamlit.app](https://bank-churn-predictor-byshaiane.streamlit.app)
 
 ```bash
 streamlit run app/streamlit_app.py
