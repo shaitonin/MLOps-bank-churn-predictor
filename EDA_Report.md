@@ -128,6 +128,8 @@ Customers retained   : 7,962  (79.62%)
 Imbalance ratio      : 3.91:1  (retained:exited)
 ```
 
+![Target Distribution](outputs/eda/plots/01_target_distribution.png)
+
 ### The Class Imbalance Problem
 
 The 80/20 distribution represents a **moderate imbalance** — not severe, but significant enough to distort models.
@@ -153,12 +155,18 @@ The 80/20 distribution represents a **moderate imbalance** — not severe, but s
 | `Satisfaction Score` | 1 | 5 | 3.01 | 3.0 | 1.41 | ~0 (uniform) | 0.0% |
 | `Point Earned` | 119 | 1,000 | 606.5 | 605.0 | 225.9 | ~0 (uniform) | 0.0% |
 
+![Numeric Distributions](outputs/eda/plots/02_numeric_distributions.png)
+
+![Numeric Variables by Churn (Boxplots)](outputs/eda/plots/03_numeric_by_target_boxplot.png)
+
 **Technical observations:**
 - **`CreditScore`:** Nearly symmetric distribution, but does not follow normal distribution (p < 0.05 in both tests).
 - **`Age`:** Distribution strongly right-skewed. Most customers are young-adult (median 37 years), but with a long tail extending to elderly customers up to 92 years.
 - **`Balance`:** Critical bimodal variable. 36.17% of customers have zero balance — this represents customers who keep the account open but do not use it. The remaining (63.83%) have average balance of ~120,000.
 - **`Tenure`:** Completely uniform between 0 and 10 years. No linear predictive power with churn.
 - **`EstimatedSalary`:** Uniformly distributed between ~0 and ~200k. Likely synthetically generated in this dataset.
+
+![Correlation Heatmap](outputs/eda/plots/04_correlation_heatmap.png)
 
 ### Categorical Variables — Distribution
 
@@ -183,6 +191,8 @@ The 80/20 distribution represents a **moderate imbalance** — not severe, but s
 | PLATINUM | 2,495 | 24.95% | 20.4% |
 | SILVER | 2,496 | 24.96% | 20.1% |
 
+![Categorical Variables by Churn](outputs/eda/plots/05_categorical_by_target.png)
+
 > Card type is distributed perfectly balanced (≈25% each) and **has no significant association with churn** (χ² p=0.168, Cramér's V=0.02).
 
 ---
@@ -192,6 +202,8 @@ The 80/20 distribution represents a **moderate imbalance** — not severe, but s
 The data reveals behavior patterns with direct relevance to the retention strategy. Each finding is presented with statistical backing and corresponding operational implication.
 
 ---
+
+![Active Member and Complaint vs Churn](outputs/eda/plots/15_active_member_complain_churn.png)
 
 ### Finding 1: Complaint is the Strongest Indicator of Departure
 
@@ -214,6 +226,10 @@ The correlation is virtually perfect: customers who registered a complaint left 
 
 **Average age of customers who left: 44.8 years vs. 37.4 years among those retained. Cohen's d = 0.747 (medium-large effect).**
 
+![Age Distribution by Churn](outputs/eda/plots/06_age_distribution_by_churn.png)
+
+![Churn by Age Bins](outputs/eda/plots/13_churn_by_age_bins.png)
+
 The difference of ~7 years between groups is statistically robust (p ≈ 0, Mann-Whitney U). This suggests that:
 
 - Older customers may have longer-standing relationships with other banks and greater ease migrating
@@ -225,6 +241,10 @@ The difference of ~7 years between groups is statistically robust (p ≈ 0, Mann
 ### Finding 3: German Operations Concentrate Double the Churn of Other Markets
 
 **Germany: 32.4% churn vs. 16.2% in France and 16.7% in Spain. Moderate association (Cramér's V = 0.17, p < 0.0001).**
+
+![Churn by Geography](outputs/eda/plots/11_churn_by_geography.png)
+
+![Credit Score by Geography](outputs/eda/plots/08_creditscore_by_geography.png)
 
 A German customer has approximately double the probability of departure relative to French or Spanish customers. Hypotheses warranting investigation by the business team:
 - The bank may have a less competitive operation in Germany
@@ -263,6 +283,8 @@ Additionally, chi-squared analysis shows that German customers proportionally fi
 
 **Women: 25.1% churn vs. 16.5% among men (Cramér's V = 0.11, p < 0.0001).**
 
+![Churn by Gender](outputs/eda/plots/12_churn_by_gender.png)
+
 Female customers show 52% higher probability of departure relative to male customers. This differential may indicate misalignment between the product portfolio and bank communications with the female profile, or unmet specific service expectations.
 
 ---
@@ -275,6 +297,8 @@ Female customers show 52% higher probability of departure relative to male custo
 | 2 | 4,590 | 349 | **7.6%** |
 | 3 | 266 | 220 | **82.7%** |
 | 4 | 60 | 60 | **100%** |
+
+![Products and Tenure vs Churn](outputs/eda/plots/10_products_and_tenure_churn.png)
 
 The pattern is non-linear: the lowest churn point is exactly 2 products. Beyond 3 products, the exit rate rises dramatically — reaching 100% for 4 products.
 
@@ -292,6 +316,8 @@ The pattern is non-linear: the lowest churn point is exactly 2 products. Beyond 
 
 Customers without recent engagement with bank services — no transactions, app access, or card usage — show nearly double the exit rate relative to active customers. Inactivity functions as an early signal of disengagement, preceding the departure decision.
 
+![Cumulative Churn by Tenure](outputs/eda/plots/14_cumulative_churn_by_tenure.png)
+
 **Operational implication:** Monitor activity declines and trigger personalized reactivation campaigns before the customer decides to leave.
 
 ---
@@ -299,6 +325,8 @@ Customers without recent engagement with bank services — no transactions, app 
 ### Finding 7: Higher-Balance Customers Show Greater Propensity for Departure
 
 **Average balance of those who left: €91,109 vs. €72,743 among those retained (+25%). Cohen's d = 0.30 (small effect).**
+
+![Balance Distribution](outputs/eda/plots/07_balance_distribution.png)
 
 The pattern is counter-intuitive but coherent: customers with high balances are precisely those most targeted by competitors, receiving active migration offers. Additionally, 36.17% of customers have zero balance — a profile of low financial engagement that paradoxically shows lower exit rates.
 
@@ -333,6 +361,8 @@ Statistical tests indicate absence of significant association between churn and 
 | `Point Earned` | -0.005 | 0.644 | No significant association |
 | `HasCrCard` | -0.007 | 0.485 | No significant association |
 | `Card Type` | χ² p=0.168 | — | No significant association |
+
+![Satisfaction Score and Points Earned vs Churn](outputs/eda/plots/09_satisfaction_and_points.png)
 
 **The satisfaction score result merits specific attention.** Absence of correlation between `Satisfaction Score` and `Exited` signals something relevant about management. Possible interpretations:
 - Customers respond satisfaction surveys insincerely
